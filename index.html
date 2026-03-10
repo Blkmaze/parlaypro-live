@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ParlayPro — Super Squares</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --surface3: #222222;
+    --border: #2a2a2a;
+    --border2: #333333;
+    --green: #16a34a;
+    --green-light: #22c55e;
+    --green-dim: rgba(22,163,74,0.15);
+    --green-glow: rgba(34,197,94,0.08);
+    --yellow: #eab308;
+    --red: #dc2626;
+    --blue: #3b82f6;
+    --text: #f5f5f5;
+    --text2: #a3a3a3;
+    --text3: #525252;
+    --cashapp: #00D632;
+    --paypal: #0070ba;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+  }
+
+  .page-wrap {
+    padding: 24px 16px;
+    margin-top: 38px;
+  }
+
+  /* SCORE TICKER */
+  .ticker-wrap {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: #000;
+    border-bottom: 1px solid var(--border2);
+    overflow: hidden;
+    height: 38px;
+    z-index: 100;
+  }
+  .ticker-inner {
+    display: inline-flex;
+    align-items: center;
+    height: 38px;
+    white-space: nowrap;
+    animation: scroll 80s linear infinite;
+  }
+  .ticker-inner:hover { animation-play-state: paused; }
+  .ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 40px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .ticker-item:hover { background: #1a1a1a; }
+  .ticker-score { color: var(--yellow); font-family: 'IBM Plex Mono', monospace; font-weight: 700; }
+  .ticker-badge { font-size: 9px; font-weight: 800; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .badge-live { background: var(--red); color: white; animation: pulse 1.5s ease-in-out infinite; }
+  .badge-final { background: #3f3f3f; color: #aaa; }
+  .badge-upcoming { background: #713f12; color: #fde68a; }
+
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* LAYOUT */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* GRID BOARD */
+  .board-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .board-header {
+    background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .board-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+
+  .board-subtitle { font-size: 12px; color: var(--text2); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+
+  .sport-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .sport-select, .game-select {
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .sport-select:focus, .game-select:focus { border-color: var(--green); }
+
+  .grid-wrap {
+    padding: 20px;
+    overflow-x: auto;
+  }
+
+  .grid-container {
+    display: grid;
+    grid-template-columns: 44px repeat(10, 1fr);
+    gap: 3px;
+    min-width: 560px;
+  }
+
+  .axis-header {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    aspect-ratio: 1;
+  }
+
+  .axis-top { color: var(--green-light); }
+  .axis-left { color: #60a5fa; }
+  .axis-corner { background: transparent; border: none; }
+
+  .team-banner {
+    grid-column: 2 / 12;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px;
+    letter-spacing: 0.05em;
+    color: var(--text);
+    text-transform: uppercase;
+  }
+
+  .cell {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.12s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cell-open {
+    background: var(--surface2);
+    color: var(--text3);
+  }
+  .cell-open:hover {
+    background: var(--surface3);
+    border-color: var(--green);
+    color: var(--green-light);
+  }
+
+  .cell-sold {
+    background: var(--surface3);
+    border-color: #2a2a2a;
+    color: var(--text2);
+    cursor: default;
+  }
+
+  .cell-mine {
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    border-color: var(--green-light);
+    color: white;
+    box-shadow: 0 0 8px rgba(34,197,94,0.25);
+  }
+
+  /* Board selector tabs */
+  .board-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 0 20px 12px;
+  }
+
+  .board-tab {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid var(--border2);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    color: var(--text2);
+  }
+
+  .board-tab.active {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  /* ===================== SIDEBAR ===================== */
+  .sidebar { display: flex; flex-direction: column; gap: 12px; }
+
+  /* MAIN CARD */
+  .main-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, #15803d 0%, #16a34a 50%, #14532d 100%);
+    padding: 16px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+  }
+
+  .card-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255,255,255,0.02) 10px,
+      rgba(255,255,255,0.02) 11px
+    );
+  }
+
+  .card-header-text { position: relative; }
+  .card-header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: white;
+    line-height: 1;
+  }
+  .card-header-sub { font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 3px; }
+
+  .available-badge {
+    position: relative;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    padding: 8px 14px;
+    text-align: center;
+  }
+  .available-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    color: white;
+    line-height: 1;
+  }
+  .available-label { font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* PARLAY BOARD SECTION */
+  .parlay-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .status-dot {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .status-live { background: rgba(220,38,38,0.2); color: #f87171; border: 1px solid rgba(220,38,38,0.3); }
+  .status-live::before { content: '●'; margin-right: 3px; animation: pulse 1s infinite; }
+  .status-scheduled { background: rgba(234,179,8,0.15); color: #fbbf24; border: 1px solid rgba(234,179,8,0.25); }
+
+  /* Odds grid */
+  .odds-header-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .odds-col-label {
+    text-align: center;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .odds-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+
+  .odds-col { display: flex; flex-direction: column; gap: 4px; }
+
+  .odds-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    gap: 2px;
+  }
+
+  .odds-btn:hover {
+    background: var(--surface3);
+    border-color: #404040;
+  }
+
+  .odds-btn.selected {
+    background: rgba(22,163,74,0.2);
+    border-color: var(--green);
+    box-shadow: 0 0 0 1px rgba(34,197,94,0.15);
+  }
+
+  .odds-btn-label {
+    font-size: 9px;
+    color: var(--text3);
+    font-weight: 600;
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 1.2;
+    letter-spacing: 0.03em;
+  }
+
+  .odds-btn.selected .odds-btn-label { color: rgba(134,239,172,0.7); }
+
+  .odds-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--green-light);
+  }
+
+  .odds-btn.selected .odds-value { color: #86efac; }
+
+  /* Selected Legs */
+  .legs-section {
+    padding: 10px 16px;
+    background: rgba(22,163,74,0.06);
+    border-bottom: 1px solid rgba(22,163,74,0.15);
+  }
+
+  .legs-title {
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--green-light);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 6px;
+  }
+
+  .leg-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(22,163,74,0.1);
+    font-size: 11px;
+  }
+  .leg-row:last-child { border-bottom: none; }
+  .leg-label { color: var(--text2); }
+  .leg-odds { font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--green-light); font-size: 12px; }
+
+  /* Buy section */
+  .buy-section { padding: 14px 16px; }
+
+  .buy-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .buy-meta-label { font-size: 12px; color: var(--text2); }
+  .buy-meta-value { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text); }
+
+  /* Quantity buttons */
+  .qty-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+
+  .qty-btn {
+    padding: 8px 0;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .qty-btn:hover { border-color: #404040; color: var(--text); background: var(--surface3); }
+
+  .qty-btn.active {
+    background: var(--green);
+    border-color: var(--green-light);
+    color: white;
+    box-shadow: 0 2px 10px rgba(22,163,74,0.3);
+  }
+
+  /* Total row */
+  .total-row {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .total-left {}
+  .total-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
+  .total-amount { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: var(--text); letter-spacing: 1px; line-height: 1; }
+  .total-right { text-align: right; }
+  .total-squares { font-size: 11px; color: var(--text2); }
+  .total-legs { font-size: 11px; color: var(--green-light); margin-top: 2px; }
+
+  /* Payment methods */
+  .pay-label {
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    text-align: center;
+    margin-bottom: 7px;
+  }
+
+  .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 12px; }
+
+  .pay-card {
+    border-radius: 10px;
+    padding: 9px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    cursor: pointer;
+  }
+
+  .pay-card:hover { filter: brightness(1.1); }
+
+  .pay-cashapp {
+    background: rgba(0,214,50,0.08);
+    border-color: rgba(0,214,50,0.25);
+  }
+
+  .pay-paypal {
+    background: rgba(0,112,186,0.08);
+    border-color: rgba(0,112,186,0.25);
+  }
+
+  .pay-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .pay-icon-cashapp { background: var(--cashapp); color: white; }
+  .pay-icon-paypal { background: var(--paypal); color: white; font-style: italic; font-size: 13px; }
+
+  .pay-info {}
+  .pay-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  .pay-cashapp .pay-name { color: var(--cashapp); }
+  .pay-paypal .pay-name { color: #60a5fa; }
+  .pay-handle { font-size: 10px; font-family: 'IBM Plex Mono', monospace; color: var(--text); }
+
+  /* CTA */
+  .cta-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    border: 1px solid var(--green-light);
+    border-radius: 12px;
+    color: white;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    padding: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.15s;
+    box-shadow: 0 4px 20px rgba(22,163,74,0.25);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    transition: left 0.5s;
+  }
+
+  .cta-btn:hover::before { left: 150%; }
+  .cta-btn:hover { background: linear-gradient(135deg, #15803d, #166534); box-shadow: 0 4px 24px rgba(22,163,74,0.4); transform: translateY(-1px); }
+  .cta-btn:active { transform: translateY(0) scale(0.98); }
+
+  .cta-sub { font-size: 10px; color: var(--text3); text-align: center; margin-top: 6px; }
+
+  /* LEGEND CARD */
+  .legend-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+
+  .legend-title { font-size: 9px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; }
+  .legend-items { display: flex; gap: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  /* TODAY'S GAMES CARD */
+  .games-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .games-card-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .games-card-header svg { color: #60a5fa; }
+
+  .games-list { padding: 8px; max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+
+  .game-row {
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.12s;
+    background: rgba(255,255,255,0.01);
+  }
+
+  .game-row:hover { background: var(--surface2); border-color: var(--border2); }
+  .game-row.active { background: var(--surface3); border-color: var(--green); }
+
+  .game-row-top { display: flex; justify-content: space-between; align-items: center; }
+  .game-teams { font-size: 12px; font-weight: 600; color: var(--text2); }
+  .game-row.active .game-teams { color: var(--text); }
+
+  .game-score { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: var(--yellow); }
+
+  /* ADMIN CARD */
+  .admin-card {
+    background: rgba(220,38,38,0.05);
+    border: 1px solid rgba(220,38,38,0.2);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+
+  .admin-title { font-size: 9px; font-weight: 800; color: #f87171; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+
+  .admin-btns { display: flex; flex-direction: column; gap: 5px; }
+
+  .admin-btn {
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    border: 1px solid transparent;
+  }
+
+  .admin-btn-blue { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.25); color: #93c5fd; }
+  .admin-btn-blue:hover { background: rgba(59,130,246,0.2); }
+  .admin-btn-green { background: rgba(22,163,74,0.1); border-color: rgba(22,163,74,0.25); color: #86efac; }
+  .admin-btn-green:hover { background: rgba(22,163,74,0.2); }
+  .admin-btn-red { background: rgba(220,38,38,0.1); border-color: rgba(220,38,38,0.25); color: #fca5a5; }
+  .admin-btn-red:hover { background: rgba(220,38,38,0.2); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: fadeIn 0.2s ease;
+  }
+  .modal-overlay.open { display: flex; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    max-width: 400px;
+    width: 100%;
+    overflow: hidden;
+    animation: slideUp 0.25s ease;
+  }
+
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal-header {
+    padding: 24px 24px 16px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-icon {
+    width: 56px; height: 56px;
+    background: var(--green-dim);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 24px;
+  }
+
+  .modal-title { font-size: 20px; font-weight: 800; color: var(--text); }
+  .modal-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+  .modal-body { padding: 16px 24px 24px; }
+
+  .modal-total {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .modal-total-label { font-size: 12px; color: var(--text2); }
+  .modal-total-amount { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--green-light); letter-spacing: 1px; }
+
+  .modal-input-label { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+  .modal-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 14px;
+  }
+  .modal-input:focus { border-color: var(--green); }
+
+  .modal-pay-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+
+  .modal-pay-option {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .modal-pay-option:hover { border-color: #404040; background: var(--surface3); }
+  .modal-pay-option.selected { border-color: var(--green); background: var(--green-dim); }
+
+  .modal-pay-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900;
+    font-size: 16px;
+    color: white;
+  }
+
+  .modal-pay-name { font-size: 10px; font-weight: 700; color: var(--text); }
+
+  .modal-cta {
+    width: 100%;
+    background: var(--green);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    font-weight: 800;
+    padding: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .modal-cta:hover { background: #15803d; }
+  .modal-cta:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    background: var(--surface3);
+    border: 1px solid var(--border2);
+    border-radius: 50%;
+    width: 28px; height: 28px;
+    color: var(--text2);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .modal-close:hover { background: var(--border2); color: var(--text); }
+
+  /* CONFIRM MODAL */
+  .confirm-modal {
+    text-align: center;
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .confirm-icon {
+    width: 72px; height: 72px;
+    background: var(--green-dim);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    border: 2px solid rgba(34,197,94,0.3);
+  }
+
+  .confirm-title { font-family: 'Bebas Neue', sans-serif; font-size: 34px; letter-spacing: 2px; color: var(--text); }
+  .confirm-msg { font-size: 16px; color: var(--text2); }
+  .confirm-badge { background: var(--green-dim); border: 1px solid rgba(34,197,94,0.3); border-radius: 10px; padding: 10px 20px; }
+  .confirm-badge-text { font-size: 13px; font-weight: 700; color: var(--green-light); }
+  .confirm-badge-sub { font-size: 10px; color: rgba(134,239,172,0.6); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3px; }
+
+  .confirm-btn {
+    width: 100%;
+    background: var(--green);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 2px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .confirm-btn:hover { background: #15803d; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    .page-wrap { padding: 8px; }
+  }
+
+/* ====== MOBILE RESPONSIVE FIX ====== */
+@media (max-width: 600px) {
+  .board-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 12px 14px !important;
+    gap: 10px !important;
+  }
+
+  .board-title {
+    font-size: 17px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .board-subtitle {
+    font-size: 11px !important;
+  }
+
+  .sport-controls {
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+  }
+
+  .sport-select,
+  .game-select {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    font-size: 12px !important;
+    padding: 6px 6px !important;
+    max-width: 50% !important;
+  }
+
+  .board-tabs {
+    width: 100% !important;
+    gap: 6px !important;
+  }
+
+  .board-tab {
+    font-size: 11px !important;
+    padding: 6px 10px !important;
+  }
+
+  .ticker-wrap {
+    font-size: 11px !important;
+  }
+
+  .ticker-logo {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+/* ====== END MOBILE FIX ====== */
+
+</style>
+</head>
+<body>
+
+<!-- SCORE TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="ticker">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="page-wrap">
+<div class="layout">
+
+  <!-- BOARD PANEL -->
+  <div class="board-panel">
+    <div class="board-header">
+      <div>
+        <div class="board-title">Super Squares</div>
+        <div class="board-subtitle">
+          <span style="display:flex;align-items:center;gap:4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            March 9, 2026 · Live Games
+          </span>
+        </div>
+      </div>
+      <div class="sport-controls">
+        <select class="sport-select" onchange="updateSport(this.value)">
+          <option value="NBA">🏀 NBA</option>
+          <option value="NHL">🏒 NHL</option>
+          <option value="MLB">⚾ MLB</option>
+          <option value="NFL">🏈 NFL</option>
+          <option value="MLS">⚽ MLS</option>
+          <option value="WNBA">🏀 WNBA</option>
+          <option value="MM_MEN">🏀 March Madness (Men)</option>
+          <option value="MM_WOMEN">🏀 March Madness (Women)</option>
+        </select>
+        <select class="game-select" id="gameSelect" onchange="selectGame(this.value)">
+          <option>Grizzlies @ Bucks</option>
+          <option>Kings @ Nuggets</option>
+          <option>76ers @ Nets</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Board Tabs -->
+    <div class="board-tabs" style="padding-top:16px;">
+      <button class="board-tab active">Board #1</button>
+      <button class="board-tab">Board #2 (FULL)</button>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid-wrap">
+      <div class="grid-container" id="squaresGrid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+
+    <!-- MAIN COMBINED CARD -->
+    <div class="main-card">
+
+      <!-- Header -->
+      <div class="card-header">
+        <div class="card-header-text">
+          <div class="card-header-title">PARLAY + SQUARES</div>
+          <div class="card-header-sub">Buy squares &amp; build your parlay</div>
+        </div>
+        <div class="available-badge">
+          <div class="available-num" id="availableCount">67</div>
+          <div class="available-label">Available</div>
+        </div>
+      </div>
+
+      <!-- Parlay Board -->
+      <div class="parlay-section">
+        <div class="section-label">
+          Parlay Board
+          <span class="status-dot status-live">Live · Q3 4:22</span>
+        </div>
+
+        <div class="odds-header-row">
+          <div class="odds-col-label">Spread</div>
+          <div class="odds-col-label">Total</div>
+          <div class="odds-col-label">Moneyline</div>
+        </div>
+
+        <div class="odds-grid">
+          <!-- Spread -->
+          <div class="odds-col">
+            <div class="odds-btn" onclick="toggleOdds(this, 'spread-away')">
+              <div class="odds-btn-label">Bucks +3.5</div>
+              <div class="odds-value">-110</div>
+            </div>
+            <div class="odds-btn selected" onclick="toggleOdds(this, 'spread-home')">
+              <div class="odds-btn-label">Grizzlies -3.5</div>
+              <div class="odds-value">-110</div>
+            </div>
+          </div>
+          <!-- Total -->
+          <div class="odds-col">
+            <div class="odds-btn" onclick="toggleOdds(this, 'total-over')">
+              <div class="odds-btn-label">Over 228.5</div>
+              <div class="odds-value">-110</div>
+            </div>
+            <div class="odds-btn" onclick="toggleOdds(this, 'total-under')">
+              <div class="odds-btn-label">Under 228.5</div>
+              <div class="odds-value">-110</div>
+            </div>
+          </div>
+          <!-- Moneyline -->
+          <div class="odds-col">
+            <div class="odds-btn selected" onclick="toggleOdds(this, 'ml-away')">
+              <div class="odds-btn-label">Bucks ML</div>
+              <div class="odds-value">-160</div>
+            </div>
+            <div class="odds-btn" onclick="toggleOdds(this, 'ml-home')">
+              <div class="odds-btn-label">Grizzlies ML</div>
+              <div class="odds-value">+140</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Build Parlay Button -->
+        <button style="width:100%;margin-top:10px;padding:8px;background:rgba(22,163,74,0.15);border:1px solid rgba(22,163,74,0.3);border-radius:8px;color:#86efac;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;letter-spacing:0.05em;text-transform:uppercase;" 
+          onmouseover="this.style.background='rgba(22,163,74,0.25)'"
+          onmouseout="this.style.background='rgba(22,163,74,0.15)'"
+        >Build Custom Parlay</button>
+      </div>
+
+      <!-- Selected Legs -->
+      <div class="legs-section">
+        <div class="legs-title">Selected Legs (2)</div>
+        <div class="leg-row">
+          <span class="leg-label">Spread · Grizzlies -3.5</span>
+          <span class="leg-odds">-110</span>
+        </div>
+        <div class="leg-row">
+          <span class="leg-label">Moneyline · Bucks ML</span>
+          <span class="leg-odds">-160</span>
+        </div>
+      </div>
+
+      <!-- Buy Squares -->
+      <div class="buy-section">
+        <div class="buy-meta">
+          <span class="buy-meta-label">Price per Square</span>
+          <span class="buy-meta-value">$10.00</span>
+        </div>
+
+        <!-- Qty -->
+        <div class="qty-grid">
+          <button class="qty-btn" onclick="setQty(1, this)">1</button>
+          <button class="qty-btn" onclick="setQty(2, this)">2</button>
+          <button class="qty-btn active" onclick="setQty(5, this)">5</button>
+          <button class="qty-btn" onclick="setQty(10, this)">10</button>
+          <button class="qty-btn" onclick="setQty(20, this)">20</button>
+        </div>
+
+        <!-- Total -->
+        <div class="total-row">
+          <div class="total-left">
+            <div class="total-label">Total Due</div>
+            <div class="total-amount" id="totalAmount">$50.00</div>
+          </div>
+          <div class="total-right">
+            <div class="total-squares" id="totalSquares">5 Squares</div>
+            <div class="total-legs">+ 2 Parlay Legs</div>
+          </div>
+        </div>
+
+        <!-- Pay Willie -->
+        <div class="pay-label">Pay Willie</div>
+        <div class="pay-grid">
+          <div class="pay-card pay-cashapp">
+            <div class="pay-icon pay-icon-cashapp">$</div>
+            <div class="pay-info">
+              <div class="pay-name">Cash App</div>
+              <div class="pay-handle">$7707438091</div>
+            </div>
+          </div>
+          <div class="pay-card pay-paypal">
+            <div class="pay-icon pay-icon-paypal">P</div>
+            <div class="pay-info">
+              <div class="pay-name">PayPal</div>
+              <div class="pay-handle" style="font-size:9px;">willie.mayes<br>@gmail.com</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <button class="cta-btn" onclick="openPayModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          BUY 5 SQUARES NOW
+        </button>
+        <div class="cta-sub">Squares assigned randomly after payment verified</div>
+      </div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend-card">
+      <div class="legend-title">Legend</div>
+      <div class="legend-items">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#16a34a;border:1px solid #22c55e;"></div>
+          Yours
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#222;border:1px solid #333;"></div>
+          Sold
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#111;border:1px solid #2a2a2a;"></div>
+          Open
+        </div>
+      </div>
+    </div>
+
+    <!-- TODAY'S GAMES -->
+    <div class="games-card">
+      <div class="games-card-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Today's Games
+      </div>
+      <div class="games-list">
+        <div class="game-row active">
+          <div class="game-row-top">
+            <span class="game-teams">Bucks @ Grizzlies</span>
+            <span class="status-dot status-live" style="font-size:8px;">Live</span>
+          </div>
+          <div class="game-score" style="margin-top:4px;">109 – 114</div>
+        </div>
+        <div class="game-row">
+          <div class="game-row-top">
+            <span class="game-teams">Nets @ 76ers</span>
+            <span class="status-dot status-scheduled" style="font-size:8px;">7:30 PM</span>
+          </div>
+        </div>
+        <div class="game-row">
+          <div class="game-row-top">
+            <span class="game-teams">Nuggets @ Kings</span>
+            <span class="status-dot status-scheduled" style="font-size:8px;">10:00 PM</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN ZONE -->
+    <div class="admin-card">
+      <div class="admin-title">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Admin Zone
+      </div>
+      <div class="admin-btns"><button class="admin-btn admin-btn-blue" onclick="lockNumbers(currentGame)">Lock Numbers to This Board</button>
+        <button class="admin-btn admin-btn-blue" onclick="buildTicker();buildGrid(currentGame);">↻ Force Refresh Scores</button>
+        <button class="admin-btn admin-btn-green" onclick="alert('New board version coming soon!')">+ New Board Version</button>
+        <button class="admin-btn admin-btn-red" onclick="adminReset();">⚠ Reset Board</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal" style="position:relative;">
+    <button class="modal-close" onclick="document.getElementById('payModal').classList.remove('open')">✕</button>
+    <div class="modal-header">
+      <div class="modal-icon">💵</div>
+      <div class="modal-title">Payment Method</div>
+      <div class="modal-sub">Select how you want to pay for your squares.</div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-total">
+        <span class="modal-total-label" id="modalSquaresLabel">5 Squares × $10</span>
+        <span class="modal-total-amount" id="modalTotal">$50.00</span>
+      </div>
+      <div class="modal-input-label">Your Initials (3 letters)</div>
+      <input type="text" maxlength="3" placeholder="ABC" class="modal-input" id="initialsInput" oninput="checkInitials()" />
+      <div class="modal-pay-grid">
+        <div class="modal-pay-option" onclick="selectPay(this)">
+          <div class="modal-pay-icon" style="background:#00D632;">$</div>
+          <div class="modal-pay-name">Cash App</div>
+        </div>
+        <div class="modal-pay-option selected" onclick="selectPay(this)">
+          <div class="modal-pay-icon" style="background:#0070ba;font-style:italic;font-size:13px;">P</div>
+          <div class="modal-pay-name">PayPal</div>
+        </div>
+        <div class="modal-pay-option" onclick="selectPay(this)">
+          <div class="modal-pay-icon" style="background:#555;">💵</div>
+          <div class="modal-pay-name">Cash</div>
+        </div>
+      </div>
+      <button class="modal-cta" id="confirmBtn" disabled onclick="confirmPurchase()">
+        ✓ I've Sent the Payment
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="confirm-modal">
+      <div class="confirm-icon">✅</div>
+      <div class="confirm-title">SQUARES SECURED!</div>
+      <div class="confirm-msg" id="confirmMsg">1 square × $10 = <strong style="color:white;">$10.00</strong></div>
+      <div class="confirm-badge">
+        <div class="confirm-badge-text">Your squares are locked in!</div>
+        <div class="confirm-badge-sub">Please pay Willie in cash or via app</div>
+      </div>
+      <button class="confirm-btn" onclick="closeConfirm()">Got it!</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── GAME DATA — Real 2026 Schedules ──────────────────────────
+// ── GAME DATA — Live 2026 Schedules (SportRadar) ─────────────
+const GAMES = {
+
+  NBA: [
+    { id:'phi-cle', home:'Cavaliers', away:'76ers', hs:0, as:0, status:'SCHEDULED', period:'Mar 9 · 7:00 PM ET',
+      hLogo:'https://a.espncdn.com/i/teamlogos/nba/500/cle.png', aLogo:'https://a.espncdn.com/i/teamlogos/nba/500/phi.png',
+      spread:{awayLine:'+13.5',homeLine:'-13.5',awayOdds:-110,homeOdds:-110},
+      total:{line:220.5,over:-110,under:-110}, ml:{away:650,home:-1000}, sold:[], mine:[] },
+    { id:'den-okc', home:'Thunder', away:'Nuggets', hs:0, as:0, status:'SCHEDULED', period:'Mar 9 · 7:30 PM ET',
+      hLogo:'https://a.espncdn.com/i/teamlogos/nba/500/okc.png', aLogo:'https://a.espncdn.com/i/teamlogos/nba/500/den.png',
+      spread:{awayLine:'+7.5',homeLine:'-7.5',awayOdds:-110,homeOdds:-110},
+      total:{line:220.5,over:-110,under:-110}, ml:{away:260,home:-330}, sold:[], mine:[] },
+    { id:'mem-bkn', home:'Nets', away:'Grizzlies', hs:0, as:0, status:'SCHEDULED', period:'Mar 9 · 7:30 PM ET',
+      hLogo:'https://a.espncdn.com/i/teamlogos/nba/500/bkn.png', aLogo:'https://a.espncdn.com/i/teamlogos/nba/500/mem.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-110,homeOdds:-110},
+      total:{line:228.5,over:-110,under:-110}, ml:{away:-125,home:105}, sold:[], mine:[] },
+    { id:'gsw-uta', home:'Jazz', away:'Warriors', hs:0, as:0, status:'SCHEDULED', period:'Mar 9 · 9:00 PM ET',
+      hLogo:'https://a.espncdn.com/i/teamlogos/nba/500/uta.png', aLogo:'https://a.espncdn.com/i/teamlogos/nba/500/gsw.png',
+      spread:{awayLine:'-5.5',homeLine:'+5.5',awayOdds:-110,homeOdds:-110},
+      total:{line:226.5,over:-110,under:-110}, ml:{away:-215,home:178}, sold:[], mine:[] },
+    { id:'nyk-lac', home:'Clippers', away:'Knicks', hs:0, as:0, status:'SCHEDULED', period:'Mar 9 · 9:30 PM ET',
+      hLogo:'https://a.espncdn.com/i/teamlogos/nba/500/lac.png', aLogo:'https://a.espncdn.com/i/teamlogos/nba/500/nyk.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-110,homeOdds:-110},
+      total:{line:220.5,over:-110,under:-110}, ml:{away:-125,home:105}, sold:[], mine:[] },
+  ],
+  NHL: [
+    { id:'la-cbj', home:'Blue Jackets', away:'Kings', hs:0, as:0, status:'SCHEDULED', period:'Mar 9 · 3:00 PM ET',
+      hLogo:'https://a.espncdn.com/i/teamlogos/nhl/500/cbj.png', aLogo:'https://a.espncdn.com/i/teamlogos/nhl/500/la.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:-175,homeOdds:145},
+      total:{line:5.5,over:-110,under:-110}, ml:{away:148,home:-178}, sold:[], mine:[] },
+    { id:'cgy-wsh', home:'Capitals', away:'Flames', hs:0, as:0, status:'SCHEDULED', period:'Mar 9 · 6:00 PM ET',
+      hLogo:'https://a.espncdn.com/i/teamlogos/nhl/500/wsh.png', aLogo:'https://a.espncdn.com/i/teamlogos/nhl/500/cgy.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:-175,homeOdds:145},
+      total:{line:5.5,over:-110,under:-110}, ml:{away:132,home:-158}, sold:[], mine:[] },
+    { id:'nyr-phi', home:'Flyers', away:'Rangers', hs:0, as:0, status:'SCHEDULED', period:'Mar 9 · 6:00 PM ET',
+      hLogo:'https://a.espncdn.com/i/teamlogos/nhl/500/phi.png', aLogo:'https://a.espncdn.com/i/teamlogos/nhl/500/nyr.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:-175,homeOdds:145},
+      total:{line:5.5,over:-110,under:-110}, ml:{away:130,home:-155}, sold:[], mine:[] },
+    { id:'uta-chi', home:'Blackhawks', away:'Mammoth', hs:0, as:0, status:'SCHEDULED', period:'Mar 9 · 7:30 PM ET',
+      hLogo:'https://a.espncdn.com/i/teamlogos/nhl/500/chi.png', aLogo:'https://a.espncdn.com/i/teamlogos/nhl/500/uta.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:145,homeOdds:-178},
+      total:{line:5.5,over:-110,under:-110}, ml:{away:-200,home:165}, sold:[], mine:[] },
+    { id:'ott-van', home:'Canucks', away:'Senators', hs:0, as:0, status:'SCHEDULED', period:'Mar 9 · 9:00 PM ET',
+      hLogo:'https://a.espncdn.com/i/teamlogos/nhl/500/van.png', aLogo:'https://a.espncdn.com/i/teamlogos/nhl/500/ott.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:-175,homeOdds:145},
+      total:{line:5.5,over:-110,under:-110}, ml:{away:220,home:-270}, sold:[], mine:[] },
+  ],
+  MLB: [
+    // Spring Training / WBC — LIVE now
+    { id:'nyy-tb', home:'Yankees', away:'Rays', hs:2, as:0, status:'LIVE', period:'Bot 3',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/nyy.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/tb.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:130,homeOdds:-155},
+      total:{line:8.5,over:-110,under:-110}, ml:{away:145,home:-170},
+      sold:[3,9,17,25,33,41,49,57,65,73], mine:[] },
+    { id:'atl-min', home:'Twins', away:'Braves', hs:1, as:4, status:'LIVE', period:'Top 4',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/min.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/atl.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-155,homeOdds:135},
+      total:{line:9.0,over:-110,under:-110}, ml:{away:-170,home:145},
+      sold:[5,13,21,29,37,45,53,61,69,77,85,93], mine:[33,66] },
+    { id:'nym-mia2', home:'Marlins', away:'Mets', hs:0, as:0, status:'LIVE', period:'Top 1',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/mia.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/nym.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-175,homeOdds:152},
+      total:{line:8.0,over:-110,under:-110}, ml:{away:-195,home:162},
+      sold:[2,10,18,26,34,42,50,58,66,74], mine:[] },
+    // Tonight Mar 7
+    { id:'kc-lad', home:'Dodgers', away:'Royals', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 8:05 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/lad.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/kc.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:155,homeOdds:-180},
+      total:{line:8.5,over:-110,under:-110}, ml:{away:175,home:-210},
+      sold:[4,12,20,28,36,44,52,60,68,76,84,92], mine:[] },
+    { id:'chc-sd2', home:'Padres', away:'Cubs', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 8:10 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/sd.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/chc.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:110,homeOdds:-132},
+      total:{line:8.0,over:-110,under:-110}, ml:{away:122,home:-148},
+      sold:[1,9,17,25,33,41,49,57,65,73,81,89], mine:[22] },
+    { id:'pit-det', home:'Tigers', away:'Pirates', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 1:05 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/det.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/pit.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:145,homeOdds:-170},
+      total:{line:8.0,over:-110,under:-110}, ml:{away:158,home:-188},
+      sold:[6,14,22,30,38,46,54,62,70,78,86,94], mine:[] },
+    { id:'nym-stl', home:'Cardinals', away:'Mets', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 1:05 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/stl.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/nym.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-180,homeOdds:158},
+      total:{line:8.5,over:-110,under:-110}, ml:{away:-200,home:170},
+      sold:[7,15,23,31,39,47,55,63,71,79,87,95], mine:[] },
+    { id:'tor-phi2', home:'Phillies', away:'Blue Jays', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 1:05 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/phi.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/tor.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:120,homeOdds:-145},
+      total:{line:9.0,over:-110,under:-110}, ml:{away:132,home:-158},
+      sold:[2,9,17,25,33,41,49,57,65,73,81,89], mine:[] },
+    { id:'min-bal', home:'Orioles', away:'Twins', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 1:05 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/bal.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/min.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:108,homeOdds:-130},
+      total:{line:8.5,over:-110,under:-110}, ml:{away:120,home:-145},
+      sold:[4,11,19,27,35,43,51,59,67,75,83,91], mine:[] },
+    { id:'tb-bos2', home:'Red Sox', away:'Rays', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 1:05 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/bos.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/tb.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:130,homeOdds:-155},
+      total:{line:9.0,over:-110,under:-110}, ml:{away:145,home:-172},
+      sold:[1,8,16,24,32,40,48,56,64,72,80,88,96], mine:[30,60] },
+    { id:'tex-sf2', home:'Giants', away:'Rangers', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 4:05 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/sf.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/tex.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-155,homeOdds:132},
+      total:{line:8.0,over:-110,under:-110}, ml:{away:-172,home:145},
+      sold:[3,11,19,27,35,43,51,59,67,75], mine:[] },
+    { id:'cin-kc2', home:'Royals', away:'Reds', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 4:05 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/kc.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/cin.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:125,homeOdds:-150},
+      total:{line:9.0,over:-110,under:-110}, ml:{away:138,home:-165},
+      sold:[6,13,21,29,37,45,53,61,69,77,85,93], mine:[] },
+    { id:'sd-cle', home:'Guardians', away:'Padres', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 4:05 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/cle.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/sd.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-165,homeOdds:142},
+      total:{line:8.0,over:-110,under:-110}, ml:{away:-182,home:152},
+      sold:[5,12,20,28,36,44,52,60,68,76,84,92], mine:[] },
+    // Recent finals
+    { id:'phi-pit2', home:'Pirates', away:'Phillies', hs:10, as:14, status:'FINAL', period:'FINAL',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/pit.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/phi.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-165,homeOdds:142},
+      total:{line:9.0,over:-110,under:-110}, ml:{away:-185,home:155},
+      sold:[2,9,17,25,33,41,49,57,65,73,81,89], mine:[] },
+    { id:'sf-cin2', home:'Giants', away:'Reds', hs:6, as:3, status:'FINAL', period:'FINAL',
+      hLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/sf.png', aLogo:'https://a.espncdn.com/i/teamlogos/mlb/500/cin.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:128,homeOdds:-152},
+      total:{line:8.5,over:-110,under:-110}, ml:{away:142,home:-168},
+      sold:[7,14,22,30,38,46,54,62,70,78,86,94], mine:[33] },
+  ],
+
+  WNBA: [
+    // 2026 WNBA season starts ~May 2026
+    { id:'lv-ny', home:'Aces', away:'Liberty', hs:0, as:0, status:'SCHEDULED', period:'May 16 · 8:00 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/lv.png', aLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/ny.png',
+      spread:{awayLine:'+3.5',homeLine:'-3.5',awayOdds:130,homeOdds:-155},
+      total:{line:165.5,over:-110,under:-110}, ml:{away:145,home:-175},
+      sold:[8,16,24,32,40,48,56,64,72,80,88,96], mine:[] },
+    { id:'ind-chi', home:'Sky', away:'Fever', hs:0, as:0, status:'SCHEDULED', period:'May 16 · 7:00 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/chi.png', aLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/ind.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-120,homeOdds:100},
+      total:{line:162.5,over:-110,under:-110}, ml:{away:-135,home:112},
+      sold:[4,12,20,28,36,44,52,60,68,76], mine:[33] },
+    { id:'sea-dal', home:'Wings', away:'Storm', hs:0, as:0, status:'SCHEDULED', period:'May 17 · 7:00 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/dal.png', aLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/sea.png',
+      spread:{awayLine:'-4.5',homeLine:'+4.5',awayOdds:-110,homeOdds:-110},
+      total:{line:163.5,over:-110,under:-110}, ml:{away:-180,home:152},
+      sold:[2,9,17,25,33,41,49,57,65,73,81,89], mine:[] },
+    { id:'con-was', home:'Mystics', away:'Sun', hs:0, as:0, status:'SCHEDULED', period:'May 17 · 7:00 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/was.png', aLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/con.png',
+      spread:{awayLine:'-5.5',homeLine:'+5.5',awayOdds:-110,homeOdds:-110},
+      total:{line:160.5,over:-110,under:-110}, ml:{away:-205,home:172},
+      sold:[1,8,16,24,32,40,48,56,64,72,80,88,96], mine:[] },
+    { id:'la-min', home:'Lynx', away:'Sparks', hs:0, as:0, status:'SCHEDULED', period:'May 18 · 8:00 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/min.png', aLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/la.png',
+      spread:{awayLine:'+6.5',homeLine:'-6.5',awayOdds:-110,homeOdds:-110},
+      total:{line:158.5,over:-110,under:-110}, ml:{away:245,home:-298},
+      sold:[5,13,21,29,37,45,53,61,69,77,85], mine:[] },
+    { id:'atl-phx2', home:'Mercury', away:'Dream', hs:0, as:0, status:'SCHEDULED', period:'May 18 · 9:00 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/phx.png', aLogo:'https://a.espncdn.com/i/teamlogos/wnba/500/atl.png',
+      spread:{awayLine:'+2.5',homeLine:'-2.5',awayOdds:108,homeOdds:-130},
+      total:{line:161.5,over:-110,under:-110}, ml:{away:120,home:-145},
+      sold:[3,10,18,26,34,42,50,58,66,74,82,90], mine:[44] },
+  ],
+
+  MLS: [
+    // LIVE / today Mar 7
+    { id:'orl-nyc', home:'NYCFC', away:'Orlando City', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 2:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/5503.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/5503.png',
+      spread:{awayLine:'+0.5',homeLine:'-0.5',awayOdds:175,homeOdds:-215},
+      total:{line:2.5,over:-110,under:-110}, ml:{away:195,home:-240},
+      sold:[4,12,20,28,36,44,52,60,68,76], mine:[] },
+    { id:'mia-dc', home:'DC United', away:'Inter Miami', hs:0, as:0, status:'SCHEDULED', period:'Mar 7 · 4:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/1326.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/36459.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-188,homeOdds:162},
+      total:{line:3.0,over:-110,under:-110}, ml:{away:-215,home:178},
+      sold:[1,7,14,21,28,35,42,49,56,63,70,77,84,91], mine:[] },
+    // Mar 8
+    { id:'rsl-atl2', home:'Atlanta Utd', away:'Real Salt Lake', hs:0, as:0, status:'SCHEDULED', period:'Mar 8 · 7:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/1106.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/11091.png',
+      spread:{awayLine:'+0.5',homeLine:'-0.5',awayOdds:175,homeOdds:-215},
+      total:{line:3.0,over:-110,under:-110}, ml:{away:192,home:-235},
+      sold:[3,10,18,26,34,42,50,58,66,74,82,90], mine:[44,55] },
+    { id:'atx-clt', home:'Charlotte FC', away:'Austin FC', hs:0, as:0, status:'SCHEDULED', period:'Mar 8 · 7:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/14880.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/17012.png',
+      spread:{awayLine:'+0.5',homeLine:'-0.5',awayOdds:145,homeOdds:-178},
+      total:{line:2.5,over:-110,under:-110}, ml:{away:160,home:-198},
+      sold:[6,13,21,29,37,45,53,61,69,77,85,93], mine:[] },
+    { id:'cfi-clb', home:'Columbus Crew', away:'Chicago Fire', hs:0, as:0, status:'SCHEDULED', period:'Mar 8 · 7:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/1106.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/8399.png',
+      spread:{awayLine:'+0.5',homeLine:'-0.5',awayOdds:178,homeOdds:-218},
+      total:{line:3.0,over:-110,under:-110}, ml:{away:195,home:-240},
+      sold:[2,9,17,25,33,41,49,57,65,73,81,89], mine:[] },
+    { id:'sj-phi2', home:'Philadelphia Union', away:'San Jose EQ', hs:0, as:0, status:'SCHEDULED', period:'Mar 8 · 7:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/9473.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/193.png',
+      spread:{awayLine:'+0.5',homeLine:'-0.5',awayOdds:198,homeOdds:-242},
+      total:{line:2.5,over:-110,under:-110}, ml:{away:218,home:-268},
+      sold:[5,12,20,28,36,44,52,60,68,76,84,92], mine:[] },
+    { id:'san-skc', home:'Sporting KC', away:'San Diego FC', hs:0, as:0, status:'SCHEDULED', period:'Mar 8 · 8:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/1581.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/1581.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-178,homeOdds:152},
+      total:{line:3.0,over:-110,under:-110}, ml:{away:-198,home:165},
+      sold:[7,15,23,31,39,47,55,63,71,79,87,95], mine:[] },
+    { id:'min-nsh2', home:'Nashville SC', away:'Minnesota Utd', hs:0, as:0, status:'SCHEDULED', period:'Mar 8 · 8:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/17012.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/17012.png',
+      spread:{awayLine:'+0.5',homeLine:'-0.5',awayOdds:185,homeOdds:-228},
+      total:{line:2.5,over:-110,under:-110}, ml:{away:205,home:-252},
+      sold:[1,8,16,24,32,40,48,56,64,72,80,88], mine:[22] },
+    { id:'sea-sai', home:'St. Louis City', away:'Seattle Sounders', hs:0, as:0, status:'SCHEDULED', period:'Mar 8 · 8:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/19538.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/9726.png',
+      spread:{awayLine:'-0.5',homeLine:'+0.5',awayOdds:-158,homeOdds:135},
+      total:{line:3.0,over:-110,under:-110}, ml:{away:-178,home:148},
+      sold:[3,11,19,27,35,43,51,59,67,75,83,91], mine:[] },
+    { id:'lag-col2', home:'Colorado Rapids', away:'LA Galaxy', hs:0, as:0, status:'SCHEDULED', period:'Mar 8 · 9:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/254.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/392.png',
+      spread:{awayLine:'-0.5',homeLine:'+0.5',awayOdds:-145,homeOdds:122},
+      total:{line:3.0,over:-110,under:-110}, ml:{away:-162,home:135},
+      sold:[2,10,18,26,34,42,50,58,66,74,82,90], mine:[44] },
+    // Recent finals
+    { id:'lafc-hou2', home:'Houston Dynamo', away:'LAFC', hs:0, as:2, status:'FINAL', period:'FINAL',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/1006.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/13595.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-175,homeOdds:148},
+      total:{line:2.5,over:-110,under:-110}, ml:{away:-195,home:162},
+      sold:[4,11,19,27,35,43,51,59,67,75], mine:[] },
+    { id:'lag-clt2', home:'LA Galaxy', away:'Charlotte FC', hs:3, as:0, status:'FINAL', period:'FINAL',
+      hLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/392.png', aLogo:'https://a.espncdn.com/i/teamlogos/soccer/500/14880.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:162,homeOdds:-198},
+      total:{line:2.5,over:-110,under:-110}, ml:{away:178,home:-218},
+      sold:[6,14,22,30,38,46,54,62,70,78,86,94], mine:[] },
+  ],
+
+  MM_MEN: [
+    { id:'duke-unc', home:'Duke', away:'UNC', hs:0, as:0, status:'SCHEDULED', period:'Mar 19 · 9:00 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/150.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/153.png',
+      spread:{awayLine:'+2.5',homeLine:'-2.5',awayOdds:110,homeOdds:-130},
+      total:{line:145.5,over:-110,under:-110}, ml:{away:120,home:-145},
+      sold:[7,15,23,31,39,47,55,63,71,79,87,95], mine:[] },
+    { id:'kan-ken', home:'Kansas', away:'Kentucky', hs:0, as:0, status:'SCHEDULED', period:'Mar 19 · 6:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/2305.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/96.png',
+      spread:{awayLine:'+1.5',homeLine:'-1.5',awayOdds:105,homeOdds:-125},
+      total:{line:150.5,over:-110,under:-110}, ml:{away:115,home:-140},
+      sold:[3,11,19,27,35,43,51,59,67,75], mine:[] },
+    { id:'hou-gon', home:'Gonzaga', away:'Houston', hs:0, as:0, status:'SCHEDULED', period:'Mar 20 · 7:09 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/2250.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/248.png',
+      spread:{awayLine:'+3.5',homeLine:'-3.5',awayOdds:145,homeOdds:-170},
+      total:{line:148.5,over:-110,under:-110}, ml:{away:160,home:-195},
+      sold:[2,9,17,25,33,41,49,57,65,73,81,89], mine:[44] },
+    { id:'aub-ten', home:'Tennessee', away:'Auburn', hs:0, as:0, status:'SCHEDULED', period:'Mar 20 · 9:39 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/2.png',
+      spread:{awayLine:'-2.5',homeLine:'+2.5',awayOdds:-115,homeOdds:-105},
+      total:{line:152.5,over:-110,under:-110}, ml:{away:-130,home:110},
+      sold:[5,13,21,29,37,45,53,61,69,77,85,93], mine:[] },
+    { id:'okc2-mich', home:'Michigan St', away:'Oklahoma', hs:0, as:0, status:'SCHEDULED', period:'Mar 19 · 7:15 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/127.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/201.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-115,homeOdds:-105},
+      total:{line:148.5,over:-110,under:-110}, ml:{away:-128,home:108},
+      sold:[1,9,17,25,33,41,49,57,65,73,81,89], mine:[] },
+    { id:'ari-cre', home:'Creighton', away:'Arizona', hs:0, as:0, status:'SCHEDULED', period:'Mar 20 · 5:15 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/156.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/12.png',
+      spread:{awayLine:'-3.5',homeLine:'+3.5',awayOdds:148,homeOdds:-175},
+      total:{line:146.5,over:-110,under:-110}, ml:{away:160,home:-192},
+      sold:[4,12,20,28,36,44,52,60,68,76,84,92], mine:[] },
+  ],
+
+  MM_WOMEN: [
+    { id:'sc-lsu', home:'South Carolina', away:'LSU', hs:0, as:0, status:'SCHEDULED', period:'Mar 20 · 7:00 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/2579.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/99.png',
+      spread:{awayLine:'+5.5',homeLine:'-5.5',awayOdds:200,homeOdds:-250},
+      total:{line:140.5,over:-110,under:-110}, ml:{away:215,home:-265},
+      sold:[2,10,18,26,34,42,50,58,66,74], mine:[] },
+    { id:'uconn-iowa', home:'UConn', away:'Iowa', hs:0, as:0, status:'SCHEDULED', period:'Mar 20 · 9:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/41.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/2294.png',
+      spread:{awayLine:'+3.5',homeLine:'-3.5',awayOdds:135,homeOdds:-160},
+      total:{line:155.5,over:-110,under:-110}, ml:{away:150,home:-182},
+      sold:[4,12,20,28,36,44,52,60,68,76,84,92], mine:[] },
+    { id:'tex-nd', home:'Notre Dame', away:'Texas', hs:0, as:0, status:'SCHEDULED', period:'Mar 21 · 7:00 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/87.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/251.png',
+      spread:{awayLine:'-4.5',homeLine:'+4.5',awayOdds:-110,homeOdds:-110},
+      total:{line:145.5,over:-110,under:-110}, ml:{away:-185,home:155},
+      sold:[1,8,16,24,32,40,48,56,64,72,80,88], mine:[] },
+    { id:'ucla-ten2', home:'Tennessee', away:'UCLA', hs:0, as:0, status:'SCHEDULED', period:'Mar 21 · 9:30 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/26.png',
+      spread:{awayLine:'+2.5',homeLine:'-2.5',awayOdds:110,homeOdds:-130},
+      total:{line:143.5,over:-110,under:-110}, ml:{away:122,home:-148},
+      sold:[6,14,22,30,38,46,54,62,70,78,86,94], mine:[33] },
+    { id:'okla-ksu', home:'Kansas State', away:'Oklahoma', hs:0, as:0, status:'SCHEDULED', period:'Mar 20 · 5:00 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/2306.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/201.png',
+      spread:{awayLine:'-2.5',homeLine:'+2.5',awayOdds:-115,homeOdds:-105},
+      total:{line:141.5,over:-110,under:-110}, ml:{away:-128,home:108},
+      sold:[3,11,19,27,35,43,51,59,67,75,83,91], mine:[] },
+    { id:'ind-ore', home:'Indiana', away:'Oregon', hs:0, as:0, status:'SCHEDULED', period:'Mar 21 · 5:00 PM',
+      hLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/84.png', aLogo:'https://a.espncdn.com/i/teamlogos/ncaa/500/2483.png',
+      spread:{awayLine:'-1.5',homeLine:'+1.5',awayOdds:-115,homeOdds:-105},
+      total:{line:147.5,over:-110,under:-110}, ml:{away:-128,home:108},
+      sold:[5,13,21,29,37,45,53,61,69,77,85,93], mine:[44] },
+  ],
+};
+
+// ── STATE ────────────────────────────────────────────────────
+let currentSport = 'NBA';
+let currentGame = GAMES.NBA[0];
+let currentQty = 5;
+
+// ── STORAGE: API (Netlify) with localStorage fallback ──────────
+// When running on Netlify → shared across ALL devices via server
+// When running locally (file://) → falls back to localStorage for testing
+
+const _cache = {};
+const _sessionInitials = {};
+const STORE_KEY = 'parlaypro_squares_v1';
+
+// Detect if the API is actually available (not just a static placeholder)
+let _apiAvailable = null; // null=unknown, true=yes, false=no
+
+async function checkApi() {
+  // Always return true - we use direct blob REST API now
+  _apiAvailable = true;
+  return true;
+}
+async function _blobFetch(gameId) {
+  try {
+    const r = await fetch(`/api/squares?gameId=${encodeURIComponent(gameId)}`);
+    if (!r.ok) return { squares: [], owners: {} };
+    return await r.json();
+  } catch { return { squares: [], owners: {} }; }
+}
+async function _blobClaim(gameId, indices, initials) {
+  const r = await fetch('/api/claim', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gameId, initials, indices })
+  });
+  const text = await r.text();
+  let data;
+  try { data = JSON.parse(text); } catch(e) { throw new Error('Server error: ' + text.substring(0,100)); }
+  if (!r.ok) throw new Error(data.error || 'claim failed');
+  return data;
+}
+async function _IGNORE_checkApi() {
+  if (_apiAvailable !== null) return _apiAvailable;
+  try {
+    const res = await fetch('/api/squares?gameId=__test__');
+    const text = await res.text();
+    // If it returns HTML it's a placeholder, not a real API
+    _apiAvailable = !text.trim().startsWith('<');
+  } catch {
+    _apiAvailable = false;
+  }
+  return _apiAvailable;
+}
+
+function isHosted() {
+  // Use cached result if available, default to checking
+  return _apiAvailable === true;
+}
+
+// ── localStorage helpers (local fallback) ──
+function _lsLoad() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
+}
+function _lsSave(store) {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch {}
+}
+function _lsGetGame(gameId) {
+  const store = _lsLoad();
+  return store[gameId] || { squares: [], owners: {} };
+}
+
+async function fetchSquares(gameId) {
+  await checkApi();
+  if (isHosted()) {
+    try {
+      const res = await fetch(`/api/squares?gameId=${encodeURIComponent(gameId)}`);
+      if (!res.ok) throw new Error('fetch failed');
+      const data = await res.json();
+      _cache[gameId] = data;
+      return data;
+    } catch (e) {
+      return _cache[gameId] || { squares: [], owners: {} };
+    }
+  } else {
+    // Local fallback: read from localStorage
+    const data = _lsGetGame(gameId);
+    _cache[gameId] = data;
+    return data;
+  }
+}
+
+function getMySquares(gameId) {
+  const data = _cache[gameId] || { squares: [], owners: {} };
+  const myInitials = _sessionInitials[gameId] || '';
+  if (!myInitials) return new Set();
+  return new Set(
+    Object.entries(data.owners)
+      .filter(([, v]) => v === myInitials)
+      .map(([k]) => Number(k))
+  );
+}
+
+function getInitialsForGame(gameId) {
+  return _sessionInitials[gameId] || '';
+}
+
+async function persistSquares(gameId, newIndices, initials) {
+  await checkApi();
+  if (isHosted()) {
+    const res = await fetch('/api/claim', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId, initials, indices: newIndices })
+    });
+    const data = await res.json();
+    if (res.status === 409) throw new Error('conflict: ' + (data.conflicts || []).join(','));
+    if (!res.ok) throw new Error(data.error || 'claim failed');
+    _cache[gameId] = { squares: data.squares, owners: data.owners };
+    _sessionInitials[gameId] = initials;
+    return data;
+  } else {
+    // Local fallback: save to localStorage
+    const current = _lsGetGame(gameId);
+    const updatedOwners = { ...current.owners };
+    for (const idx of newIndices) updatedOwners[idx] = initials;
+    const updatedSquares = [...new Set([...current.squares, ...newIndices])];
+    const updated = { squares: updatedSquares, owners: updatedOwners };
+    const store = _lsLoad();
+    store[gameId] = updated;
+    _lsSave(store);
+    _cache[gameId] = updated;
+    _sessionInitials[gameId] = initials;
+    return updated;
+  }
+}
+
+async function adminReset(gameId) {
+  await checkApi();
+  if (isHosted()) {
+    const key = prompt('Enter admin key:');
+    if (!key) return;
+    const res = await fetch('/api/admin/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameId, adminKey: key })
+    });
+    const data = await res.json();
+    if (!res.ok) { alert('Reset failed: ' + (data.error || 'unauthorized')); return; }
+  } else {
+    // Local fallback
+    if (!confirm('Reset ' + (gameId ? 'this board' : 'ALL boards') + '?')) return;
+    const store = _lsLoad();
+    if (gameId) delete store[gameId];
+    else Object.keys(store).forEach(k => delete store[k]);
+    _lsSave(store);
+  }
+  if (gameId) delete _cache[gameId]; else Object.keys(_cache).forEach(k => delete _cache[k]);
+  await loadGame(currentGame);
+  buildGamesList(currentSport);
+}
+
+// ── TICKER ───────────────────────────────────────────────────
+function buildTicker() {
+  const allGames = [...(GAMES.NBA||[]), ...(GAMES.NHL||[])];
+  const wrap = document.querySelector('.ticker-inner');
+  if (!wrap) return;
+  wrap.innerHTML = allGames.map(g => {
+    const isLive = g.status === 'LIVE';
+    return `<div class="ticker-item">
+      <img class="ticker-logo" src="${g.aLogo}" onerror="this.style.display='none'">
+      <span class="ticker-teams">${g.away}</span>
+      <span class="ticker-score">${isLive ? g.as + ' – ' + g.hs : g.period}</span>
+      <span class="ticker-teams">${g.home}</span>
+      <img class="ticker-logo" src="${g.hLogo}" onerror="this.style.display='none'">
+      ${isLive ? '<span class="status-dot status-live" style="font-size:8px;margin-left:4px;">Live</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── GRID ─────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+const INITIALS = ['WM','KJ','DT','AA','RB','LM','CP','JS','MB','TW','GH','PD','NT','BK','SC','FO','YI','QV','ZX','ER'];
+
+async function buildGrid(game) {
+  // Load live server data — syncs across ALL devices
+  const serverData = await fetchSquares(game.id);
+  const serverOwners = serverData.owners || {};
+  const serverSold = new Set(Object.keys(serverOwners).map(Number));
+
+  const _locked = serverData && serverData.numbersLocked && serverData.rowNums && serverData.rowNums.length===10;
+  const topNums = _locked ? serverData.rowNums : shuffle([0,1,2,3,4,5,6,7,8,9]);
+  const leftNums = _locked ? serverData.colNums : shuffle([0,1,2,3,4,5,6,7,8,9]);
+  const sold = new Set([...game.sold, ...serverSold]);
+  const mine = getMySquares(game.id);
+  // merge any hardcoded demo mine squares too
+  (game.mine || []).forEach(i => mine.add(i));
+  const myInitials = getInitialsForGame(game.id) || 'YOU';
+  const available = Math.max(0, 100 - sold.size);
+
+  document.getElementById('availableCount').textContent = available;
+
+  let html = '';
+  // Corner cell — away team (left axis)
+  html += `<div class="axis-header axis-corner" style="font-size:9px;color:var(--text3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center;">
+    <span style="font-weight:700;color:var(--text2);">${game.away}</span>
+    ${game.status==='LIVE'?`<span style="color:var(--yellow);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;">${game.as}</span>`:''}
+  </div>`;
+
+  // Top team banner — home team
+  html += `<div class="team-banner">${game.home}${game.status==='LIVE'?` &nbsp; <span style="color:var(--yellow)">${game.hs}</span>`:''}</div>`;
+
+  // Number row header
+  html += `<div class="axis-header axis-corner"></div>`;
+  topNums.forEach(n => {
+    html += `<div class="axis-header axis-top">${n}</div>`;
+  });
+
+  // Rows
+  for (let r = 0; r < 10; r++) {
+    html += `<div class="axis-header axis-left">${leftNums[r]}</div>`;
+    for (let c = 0; c < 10; c++) {
+      const idx = r * 10 + c;
+      if (mine.has(idx)) {
+        html += `<div class="cell cell-mine">${myInitials}</div>`;
+      } else if (serverOwners[idx] !== undefined) {
+        html += `<div class="cell cell-sold">${serverOwners[idx]}</div>`;
+      } else if (sold.has(idx)) {
+        html += `<div class="cell cell-sold">${INITIALS[idx % INITIALS.length]}</div>`;
+      } else {
+        html += `<div class="cell cell-open"></div>`;
+      }
+    }
+  }
+
+  document.getElementById('squaresGrid').innerHTML = html;
+  // Store render timestamp for polling
+  window._lastGridRender = Date.now();
+  if (window._pollTimer) clearInterval(window._pollTimer);
+  window._pollTimer = setInterval(async function() {
+    if (!window.currentGame || window.currentGame.id !== game.id) return;
+    try {
+      var r = await fetch('/api/squares?gameId=' + game.id);
+      var data = await r.json();
+      if (!data || !data.owners) return;
+      var owners = data.owners;
+      var cells = document.querySelectorAll('.cell');
+      var i = 0;
+      cells.forEach(function(cell) {
+        if (owners[i] !== undefined && !cell.classList.contains('cell-mine')) {
+          cell.className = 'cell cell-sold';
+          cell.textContent = owners[i];
+        }
+        i++;
+      });
+    } catch(e) {}
+  }, 10000);
+}
+
+// ── ODDS PANEL ───────────────────────────────────────────────
+function fmt(n) { return n > 0 ? `+${n}` : `${n}`; }
+
+function buildOdds(game) {
+  // Status badge
+  const statusHtml = game.status === 'LIVE'
+    ? `<span class="status-dot status-live">${game.period}</span>`
+    : `<span class="status-dot status-scheduled">${game.period}</span>`;
+
+  document.querySelector('.parlay-section .section-label').innerHTML = `Parlay Board ${statusHtml}`;
+
+  // Odds buttons
+  document.querySelector('.odds-grid').innerHTML = `
+    <div class="odds-col">
+      <div class="odds-btn" onclick="toggleOdds(this)">
+        <div class="odds-btn-label">${game.away} ${game.spread.awayLine}</div>
+        <div class="odds-value">${fmt(game.spread.awayOdds)}</div>
+      </div>
+      <div class="odds-btn" onclick="toggleOdds(this)">
+        <div class="odds-btn-label">${game.home} ${game.spread.homeLine}</div>
+        <div class="odds-value">${fmt(game.spread.homeOdds)}</div>
+      </div>
+    </div>
+    <div class="odds-col">
+      <div class="odds-btn" onclick="toggleOdds(this)">
+        <div class="odds-btn-label">Over ${game.total.line}</div>
+        <div class="odds-value">${fmt(game.total.over)}</div>
+      </div>
+      <div class="odds-btn" onclick="toggleOdds(this)">
+        <div class="odds-btn-label">Under ${game.total.line}</div>
+        <div class="odds-value">${fmt(game.total.under)}</div>
+      </div>
+    </div>
+    <div class="odds-col">
+      <div class="odds-btn" onclick="toggleOdds(this)">
+        <div class="odds-btn-label">${game.away} ML</div>
+        <div class="odds-value">${fmt(game.ml.away)}</div>
+      </div>
+      <div class="odds-btn" onclick="toggleOdds(this)">
+        <div class="odds-btn-label">${game.home} ML</div>
+        <div class="odds-value">${fmt(game.ml.home)}</div>
+      </div>
+    </div>`;
+
+  // Clear legs
+  document.querySelector('.legs-section').innerHTML = `
+    <div class="legs-title">Selected Legs (0)</div>
+    <div class="legs-empty" style="font-size:11px;color:var(--text3);padding:4px 0;">Click odds above to add legs</div>`;
+}
+
+// ── BOARD HEADER ─────────────────────────────────────────────
+function updateBoardHeader(game) {
+  document.querySelector('.board-title').textContent = `${game.away} @ ${game.home}`;
+
+  // Today's games sidebar — highlight active
+  document.querySelectorAll('.game-row').forEach(row => {
+    row.classList.toggle('active', row.dataset.id === game.id);
+  });
+}
+
+// ── SIDEBAR GAMES LIST ───────────────────────────────────────
+function buildGamesList(sport) {
+  const games = GAMES[sport] || [];
+  const list = document.querySelector('.games-list');
+  list.innerHTML = games.map(g => `
+    <div class="game-row${g.id === currentGame.id ? ' active' : ''}" data-id="${g.id}" onclick="selectGameById('${g.id}')">
+      <div class="game-row-top">
+        <span class="game-teams">${g.away} @ ${g.home}</span>
+        ${g.status==='LIVE'
+          ? `<span class="status-dot status-live" style="font-size:8px;">Live</span>`
+          : `<span class="status-dot status-scheduled" style="font-size:8px;">${g.period}</span>`}
+      </div>
+      ${g.status==='LIVE' ? `<div class="game-score" style="margin-top:4px;">${g.as} – ${g.hs}</div>` : ''}
+    </div>`).join('');
+}
+
+// ── GAME SELECT DROPDOWN ─────────────────────────────────────
+function populateGameDropdown(sport) {
+  const games = GAMES[sport] || [];
+  const sel = document.getElementById('gameSelect');
+  sel.innerHTML = games.map(g =>
+    `<option value="${g.id}">${g.status==='LIVE'?'● ':''}${g.away} @ ${g.home}</option>`
+  ).join('');
+}
+
+// ── LOAD GAME ────────────────────────────────────────────────
+async function loadGame(game) {
+  currentGame = game;
+  await buildGrid(game);
+  // Auto-refresh every 15s to sync claimed squares
+  if (window._pollTimer) clearInterval(window._pollTimer);
+  window._pollTimer = setInterval(async function() {
+    if (currentGame && currentGame.id === game.id) {
+      await buildGrid(currentGame);
+    }
+  }, 15000);
+  buildOdds(game);
+  updateBoardHeader(game);
+  updateCTA();
+
+  // Sync dropdown
+  document.getElementById('gameSelect').value = game.id;
+
+  // Sync sidebar list
+  document.querySelectorAll('.game-row').forEach(row => {
+    row.classList.toggle('active', row.dataset.id === game.id);
+  });
+}
+
+// ── EVENT HANDLERS ───────────────────────────────────────────
+function updateSport(val) {
+  currentSport = val;
+  const games = GAMES[val] || [];
+  if (!games.length) return;
+  populateGameDropdown(val);
+  buildGamesList(val);
+  loadGame(games[0]); // async, intentionally not awaited
+}
+
+function selectGame(gameId) {
+  const game = (GAMES[currentSport] || []).find(g => g.id === gameId);
+  if (game) loadGame(game);
+}
+
+function selectGameById(gameId) {
+  const game = Object.values(GAMES).flat().find(g => g.id === gameId);
+  if (game) loadGame(game);
+}
+
+function toggleOdds(btn) {
+  btn.classList.toggle('selected');
+  const selected = document.querySelectorAll('.odds-btn.selected');
+  const legsSection = document.querySelector('.legs-section');
+
+  if (selected.length === 0) {
+    legsSection.innerHTML = `
+      <div class="legs-title">Selected Legs (0)</div>
+      <div style="font-size:11px;color:var(--text3);padding:4px 0;">Click odds above to add legs</div>`;
+    return;
+  }
+
+  let html = `<div class="legs-title">Selected Legs (${selected.length})</div>`;
+  selected.forEach(b => {
+    const label = b.querySelector('.odds-btn-label').textContent;
+    const odds = b.querySelector('.odds-value').textContent;
+    html += `<div class="leg-row"><span class="leg-label">${label}</span><span class="leg-odds">${odds}</span></div>`;
+  });
+  legsSection.innerHTML = html;
+}
+
+function setQty(n, btn) {
+  currentQty = n;
+  document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('totalAmount').textContent = `$${(n * 10).toFixed(2)}`;
+  document.getElementById('totalSquares').textContent = `${n} Square${n > 1 ? 's' : ''}`;
+  updateCTA();
+}
+
+function updateCTA() {
+  document.querySelector('.cta-btn').innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    BUY ${currentQty} SQUARE${currentQty > 1 ? 'S' : ''} NOW`;
+}
+
+function openPayModal() {
+  document.getElementById('modalSquaresLabel').textContent = `${currentQty} Square${currentQty > 1 ? 's' : ''} × $10`;
+  document.getElementById('modalTotal').textContent = `$${(currentQty * 10).toFixed(2)}`;
+  document.getElementById('initialsInput').value = '';
+  document.getElementById('confirmBtn').disabled = true;
+  document.getElementById('payModal').classList.add('open');
+}
+
+function selectPay(el) {
+  document.querySelectorAll('.modal-pay-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function checkInitials() {
+  document.getElementById('confirmBtn').disabled = document.getElementById('initialsInput').value.trim().length < 3;
+}
+
+async function confirmPurchase() {
+  const initials = document.getElementById('initialsInput').value.trim().toUpperCase();
+  const btn = document.getElementById('confirmBtn');
+  btn.disabled = true;
+  btn.textContent = 'Locking in...';
+
+  const game = currentGame;
+  const serverData = _cache[game.id] || await fetchSquares(game.id);
+  const serverOwned = new Set(Object.keys(serverData.owners || {}).map(Number));
+  const sold = new Set([...game.sold, ...serverOwned]);
+  const mine = getMySquares(game.id);
+  (game.mine || []).forEach(i => mine.add(i));
+
+  // Collect open indices and pick random ones
+  const open = [];
+  for (let i = 0; i < 100; i++) {
+    if (!sold.has(i) && !mine.has(i)) open.push(i);
+  }
+  const shuffled = open.sort(() => Math.random() - 0.5);
+  const toAdd = Math.min(currentQty, shuffled.length);
+  const newIdxs = shuffled.slice(0, toAdd);
+
+  try {
+    await persistSquares(game.id, newIdxs, initials);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'CONFIRM & LOCK IN';
+    alert('Could not claim squares: ' + e.message + '\nTry refreshing and picking again.');
+    return;
+  }
+
+  document.getElementById('payModal').classList.remove('open');
+  document.getElementById('confirmMsg').innerHTML =
+    `${toAdd} square${toAdd > 1 ? 's' : ''} × $10 = <strong style="color:white;">$${(toAdd * 10).toFixed(2)}</strong>` +
+    `<br><span style="color:var(--green-light);font-size:13px;margin-top:4px;display:block;">Your squares are locked in as <strong>${initials}</strong> ✓ — visible to all players!</span>`;
+  setTimeout(() => {
+    document.getElementById('confirmModal').classList.add('open');
+    buildGrid(game);
+  }, 150);
+}
+
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.remove('open');
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  buildTicker();
+  populateGameDropdown('NBA');
+  buildGamesList('NBA');
+  await loadGame(GAMES.NBA[0]);
+});
+
+
+
+function lockNumbers(game) {
+  if (!game) { alert('No game selected'); return; }
+  var topCells = document.querySelectorAll('.axis-header.axis-top');
+  var leftCells = document.querySelectorAll('.axis-header.axis-left');
+  var rowNums = Array.from(topCells).map(function(el){ return parseInt(el.textContent.trim()); });
+  var colNums = Array.from(leftCells).map(function(el){ return parseInt(el.textContent.trim()); });
+  if (rowNums.length !== 10 || colNums.length !== 10) { alert('Open a game board first (found ' + rowNums.length + ' top, ' + colNums.length + ' left)'); return; }
+  var pin = prompt('Enter admin PIN to lock numbers:');
+  if (!pin) return;
+  fetch('/api/lock-numbers', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({gameId: game.id, pin: pin, rowNums: rowNums, colNums: colNums})
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.ok) { alert('Numbers locked! All boards will now match.'); location.reload(); }
+    else { alert('Error: ' + (d.error || 'Unknown')); }
+  }).catch(function(e){ alert('Error: ' + e.message); });
+}
+</script>
+<script>setInterval(async function(){if(!window.currentGame)return;try{var r=await fetch("/api/squares?gameId="+window.currentGame.id);var d=await r.json();if(!d||!d.owners)return;var cells=document.querySelectorAll(".cell");var i=0;cells.forEach(function(c){if(d.owners[i]!==undefined&&!c.classList.contains("cell-mine")){c.className="cell cell-sold";c.textContent=d.owners[i];}i++;});}catch(e){}},8000);</script>
+<script src="/poll.js"></script><script>setInterval(async function(){try{if(!window.currentGame)return;var d=await(await fetch("/api/squares?gameId="+window.currentGame.id)).json();if(!d||!d.owners)return;document.querySelectorAll(".cell").forEach(function(c,i){if(d.owners[i]!==undefined&&!c.classList.contains("cell-mine")){c.className="cell cell-sold";c.textContent=d.owners[i];}});}catch(e){}},8000);</script>
+<script>setInterval(async function(){try{if(!window.currentGame)return;var d=await(await fetch("/api/squares?gameId="+window.currentGame.id)).json();if(!d||!d.owners)return;document.querySelectorAll(".cell").forEach(function(c,i){if(d.owners[i]!==undefined&&!c.classList.contains("cell-mine")){c.className="cell cell-sold";c.textContent=d.owners[i];}});}catch(e){}},8000);</script><script>function adminReset(){if(!window.currentGame){alert("No game selected");return;}var pin=prompt("Enter admin PIN to reset board:");if(!pin)return;fetch("/api/reset-squares",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({gameId:window.currentGame.id,pin:pin})}).then(function(r){return r.json();}).then(function(d){if(d.ok){alert("Board cleared!");buildGrid(window.currentGame);}else{alert("Error: "+(d.error||"failed"));}}).catch(function(e){alert("Network error");});}</script>
+<script>window.adminReset=function(){var gid=window.currentGame?window.currentGame.id:null;if(!gid){var active=document.querySelector(".game-tab.active,.board-tab.active,[data-game-id]");if(active)gid=active.dataset.gameId||active.dataset.id;}if(!gid){alert("Please select a game board first, then click Reset Board.");return;}var pin=prompt("Enter PIN to clear all squares from: "+gid);if(!pin)return;fetch("/api/reset-squares",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({gameId:gid,pin:pin})}).then(function(r){return r.json();}).then(function(d){if(d.ok){alert("Board cleared! All squares reset.");if(window.buildGrid&&window.currentGame)buildGrid(window.currentGame);}else{alert("Error: "+(d.error||"unknown"));}}).catch(function(){alert("Network error - try again");});};</script>
+<script>
+window.addEventListener("load", function() {
+  window.adminReset = function() {
+    var gameId = null;
+    if (window.currentGame) { gameId = window.currentGame.id; }
+    if (!gameId) {
+      var active = document.querySelector(".game-btn.active, .tab.active, [data-id]");
+      if (active) gameId = active.dataset.id || active.dataset.gameId;
+    }
+    if (!gameId) {
+      var header = document.querySelector(".board-title, #boardTitle, .game-title");
+      if (header) gameId = header.textContent.trim().toLowerCase().replace(/\s+/g,"").replace(/[@]/g,"-");
+    }
+    if (!gameId) { gameId = prompt("Enter game ID to reset (e.g. phi-cle):"); }
+    if (!gameId) return;
+    var pin = prompt("Enter PIN to reset board [" + gameId + "]:");
+    if (!pin) return;
+    fetch("/api/reset-squares", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({gameId: gameId, pin: pin})
+    }).then(function(r){return r.json();}).then(function(d){
+      if (d.ok) { alert("Board cleared!"); if(window.buildGrid && window.currentGame) buildGrid(window.currentGame); else location.reload(); }
+      else { alert("Error: " + (d.error||"failed")); }
+    }).catch(function(){ alert("Network error"); });
+  };
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+
+

@@ -1,0 +1,7 @@
+[build]
+  publish = "public"
+  command = "echo ok"
+
+[functions]
+  node_bundler = "esbuild"
+  directory = "netlify/fns"
