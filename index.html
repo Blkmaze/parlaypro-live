@@ -1131,7 +1131,10 @@
 
     <!-- LEGEND -->
     <div class="legend-card">
-      <div class="legend-title">Legend</div>
+      <div class="legend-title" style="display:flex;justify-content:space-between;align-items:center;">
+        Legend
+        <button onclick="localStorage.clear();_cache={};alert('Local data cleared! Refreshing...');location.reload();" style="background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:9px;padding:3px 8px;border-radius:4px;cursor:pointer;">Clear My Data</button>
+      </div>
       <div class="legend-items">
         <div class="legend-item">
           <div class="legend-dot" style="background:#16a34a;border:1px solid #22c55e;"></div>
@@ -1410,11 +1413,21 @@ async function buildTicker() {
 }
 
 // ── GRID ─────────────────────────────────────────────────────
-function shuffle(arr) {
+// Seeded shuffle — same game ID always produces same number order on every device
+function seededShuffle(arr, seed) {
   const a = [...arr];
-  for (let i = a.length-1; i > 0; i--) {
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i],a[j]] = [a[j],a[i]];
+  // Simple hash from string to number
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+  }
+  function nextRand() {
+    h = (h * 1664525 + 1013904223) | 0;
+    return (h >>> 0) / 4294967296;
+  }
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(nextRand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
@@ -1427,12 +1440,34 @@ async function buildGrid(game) {
   const serverSold = new Set(Object.keys(serverOwners).map(Number));
 
   const _locked = serverData && serverData.numbersLocked && serverData.rowNums && serverData.rowNums.length===10;
-  const topNums = _locked ? serverData.rowNums : shuffle([0,1,2,3,4,5,6,7,8,9]);
-  const leftNums = _locked ? serverData.colNums : shuffle([0,1,2,3,4,5,6,7,8,9]);
-  const sold = new Set([...game.sold || [], ...serverSold]);
+  const topNums = _locked ? serverData.rowNums : seededShuffle([0,1,2,3,4,5,6,7,8,9], 'top-' + game.id);
+  const leftNums = _locked ? serverData.colNums : seededShuffle([0,1,2,3,4,5,6,7,8,9], 'left-' + game.id);
+
+  // Self-heal: remove local squares that aren't on the server anymore (board was reset)
   const mine = getMySquares(game.id);
+  if (mine.size > 0 && Object.keys(serverOwners).length === 0) {
+    // Server is empty but local thinks we have squares — board was reset
+    localStorage.removeItem('my_' + game.id);
+    localStorage.removeItem('initials_' + game.id);
+    mine.clear();
+  } else if (mine.size > 0) {
+    // Remove any local squares not on server
+    const myInitials = getInitialsForGame(game.id);
+    let changed = false;
+    mine.forEach(idx => {
+      if (!serverOwners[idx] || (myInitials && serverOwners[idx] !== myInitials.toUpperCase())) {
+        mine.delete(idx);
+        changed = true;
+      }
+    });
+    if (changed) {
+      localStorage.setItem('my_' + game.id, JSON.stringify([...mine]));
+    }
+  }
+
   (game.mine || []).forEach(i => mine.add(i));
   const myInitials = getInitialsForGame(game.id) || 'YOU';
+  const sold = new Set([...(game.sold || []), ...serverSold]);
   const available = Math.max(0, 100 - sold.size);
 
   document.getElementById('availableCount').textContent = available;
