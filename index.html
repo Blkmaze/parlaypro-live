@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<!-- v20260316081114 -->
+<!-- v20260316_cleaned -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ParlayPro — Super Squares</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -875,66 +875,57 @@
     .page-wrap { padding: 8px; }
   }
 
-/* ====== MOBILE RESPONSIVE FIX ====== */
-@media (max-width: 600px) {
-  .board-header {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    padding: 12px 14px !important;
-    gap: 10px !important;
+  @media (max-width: 600px) {
+    .board-header {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      padding: 12px 14px !important;
+      gap: 10px !important;
+    }
+    .board-title {
+      font-size: 17px !important;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .board-subtitle {
+      font-size: 11px !important;
+    }
+    .sport-controls {
+      width: 100% !important;
+      flex-wrap: nowrap !important;
+      gap: 6px !important;
+    }
+    .sport-select,
+    .game-select {
+      flex: 1 1 0 !important;
+      min-width: 0 !important;
+      font-size: 12px !important;
+      padding: 6px 6px !important;
+      max-width: 50% !important;
+    }
+    .board-tabs {
+      width: 100% !important;
+      gap: 6px !important;
+    }
+    .board-tab {
+      font-size: 11px !important;
+      padding: 6px 10px !important;
+    }
+    .ticker-wrap {
+      font-size: 11px !important;
+    }
+    .layout{flex-direction:column!important;}
+    .sidebar{width:100%!important;max-width:100%!important;}
+    .board-panel{width:100%!important;}
   }
-
-  .board-title {
-    font-size: 17px !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
-
-  .board-subtitle {
-    font-size: 11px !important;
-  }
-
-  .sport-controls {
-    width: 100% !important;
-    flex-wrap: nowrap !important;
-    gap: 6px !important;
-  }
-
-  .sport-select,
-  .game-select {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    font-size: 12px !important;
-    padding: 6px 6px !important;
-    max-width: 50% !important;
-  }
-
-  .board-tabs {
-    width: 100% !important;
-    gap: 6px !important;
-  }
-
-  .board-tab {
-    font-size: 11px !important;
-    padding: 6px 10px !important;
-  }
-
-  .ticker-wrap {
-    font-size: 11px !important;
-  }
-
-  .ticker-logo {
-    width: 18px !important;
-    height: 18px !important;
-  }
-}
-/* ====== END MOBILE FIX ====== */
-
 </style>
 </head>
 <body>
+
+<!-- STATUS BAR (debug) -->
+<div id="statusBar" style="position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #333;padding:6px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#22c55e;z-index:9999;">Loading...</div>
 
 <!-- SCORE TICKER -->
 <div class="ticker-wrap">
@@ -970,16 +961,21 @@
           <option value="MM_MEN">🏀 March Madness (Men)</option>
           <option value="MM_WOMEN">🏀 March Madness (Women)</option>
         </select>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button onclick="changeDate(-1)" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:6px 8px;cursor:pointer;font-size:14px;line-height:1;">◀</button>
+          <input type="date" id="gameDate" class="game-select" onchange="updateDateFromPicker(this.value)" style="min-width:130px;color-scheme:dark;" />
+          <button onclick="changeDate(1)" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:6px 8px;cursor:pointer;font-size:14px;line-height:1;">▶</button>
+        </div>
         <select class="game-select" id="gameSelect" onchange="selectGame(this.value)">
-          <option>Select game...</option>
+          <!-- populated by JS -->
         </select>
       </div>
     </div>
 
     <!-- Board Tabs -->
     <div class="board-tabs" style="padding-top:16px;">
-      <button class="board-tab active" onclick="switchBoard('v1')">Board #1</button>
-      <button class="board-tab" onclick="switchBoard('v2')">Board #2</button>
+      <button class="board-tab active">Board #1</button>
+      <button class="board-tab">Board #2 (FULL)</button>
     </div>
 
     <!-- Grid -->
@@ -1022,7 +1018,39 @@
         </div>
 
         <div class="odds-grid">
-          <!-- populated by JS -->
+          <!-- Spread -->
+          <div class="odds-col">
+            <div class="odds-btn" onclick="toggleOdds(this, 'spread-away')">
+              <div class="odds-btn-label">Away +3.5</div>
+              <div class="odds-value">-110</div>
+            </div>
+            <div class="odds-btn selected" onclick="toggleOdds(this, 'spread-home')">
+              <div class="odds-btn-label">Home -3.5</div>
+              <div class="odds-value">-110</div>
+            </div>
+          </div>
+          <!-- Total -->
+          <div class="odds-col">
+            <div class="odds-btn" onclick="toggleOdds(this, 'total-over')">
+              <div class="odds-btn-label">Over 228.5</div>
+              <div class="odds-value">-110</div>
+            </div>
+            <div class="odds-btn" onclick="toggleOdds(this, 'total-under')">
+              <div class="odds-btn-label">Under 228.5</div>
+              <div class="odds-value">-110</div>
+            </div>
+          </div>
+          <!-- Moneyline -->
+          <div class="odds-col">
+            <div class="odds-btn selected" onclick="toggleOdds(this, 'ml-away')">
+              <div class="odds-btn-label">Away ML</div>
+              <div class="odds-value">-160</div>
+            </div>
+            <div class="odds-btn" onclick="toggleOdds(this, 'ml-home')">
+              <div class="odds-btn-label">Home ML</div>
+              <div class="odds-value">+140</div>
+            </div>
+          </div>
         </div>
 
         <!-- Build Parlay Button -->
@@ -1034,8 +1062,15 @@
 
       <!-- Selected Legs -->
       <div class="legs-section">
-        <div class="legs-title">Selected Legs (0)</div>
-        <div style="font-size:11px;color:var(--text3);padding:4px 0;">Click odds above to add legs</div>
+        <div class="legs-title">Selected Legs (2)</div>
+        <div class="leg-row">
+          <span class="leg-label">Spread · Home -3.5</span>
+          <span class="leg-odds">-110</span>
+        </div>
+        <div class="leg-row">
+          <span class="leg-label">Moneyline · Away ML</span>
+          <span class="leg-odds">-160</span>
+        </div>
       </div>
 
       <!-- Buy Squares -->
@@ -1132,9 +1167,55 @@
       </div>
       <div class="admin-btns">
         <button class="admin-btn admin-btn-blue" onclick="lockNumbers(currentGame)">Lock Numbers to This Board</button>
-        <button class="admin-btn admin-btn-blue" onclick="refreshBoard()">↻ Force Refresh Scores</button>
-        <button class="admin-btn admin-btn-green" onclick="alert('Board switching is now live! Use the Board tabs above.')">+ New Board Version</button>
-        <button class="admin-btn admin-btn-red" onclick="adminReset();">⚠ Reset Board</button>
+        <button class="admin-btn admin-btn-blue" onclick="_cache={};if(!currentGame){location.reload();}else{buildTicker().catch(function(){});buildGrid(currentGame);}">↻ Force Refresh Scores</button>
+        <button class="admin-btn admin-btn-green" onclick="alert('New board version coming soon!')">+ New Board Version</button>
+        <button class="admin-btn admin-btn-red" onclick="adminReset();">⨂ Reset Board</button>
+      </div>
+    </div>
+
+    <!-- PLAYER PROPS -->
+    <div class="admin-card" style="margin-top:12px;">
+      <div class="admin-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Player Props — Over/Under
+        </span>
+        <div style="display:flex;gap:4px;">
+          <button class="admin-btn admin-btn-green" style="margin:0;padding:4px 10px;font-size:10px;" onclick="togglePropsSetup()">+ Add Player</button>
+          <button class="admin-btn admin-btn-red" style="margin:0;padding:4px 10px;font-size:10px;" onclick="resetProps()">Reset Props</button>
+        </div>
+      </div>
+
+      <!-- Props Setup Form (hidden by default) -->
+      <div id="propsSetupForm" style="display:none;padding:12px;background:var(--surface2);border-radius:8px;margin:10px 12px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;">Add Player Props Board</div>
+        <input id="propsPlayerName" type="text" placeholder="Player Name (e.g. LeBron James)" style="width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text);font-size:12px;margin-bottom:6px;outline:none;" />
+        <select id="propsPlayerSide" style="width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text);font-size:12px;margin-bottom:6px;outline:none;cursor:pointer;">
+          <option value="home">Home Team Player</option>
+          <option value="away">Away Team Player</option>
+          <option value="player3">Player 3</option>
+          <option value="player4">Player 4</option>
+          <option value="player5">Player 5</option>
+          <option value="player6">Player 6</option>
+        </select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+          <select id="propsPrice" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;cursor:pointer;">
+            <option value="5">$5 per square</option>
+            <option value="10">$10 per square</option>
+            <option value="15">$15 per square</option>
+            <option value="20">$20 per square</option>
+            <option value="25">$25 per square</option>
+            <option value="50">$50 per square</option>
+            <option value="100">$100 per square</option>
+          </select>
+          <input id="propsPin" type="password" placeholder="Admin PIN" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;" />
+        </div>
+        <button onclick="addPlayerProp()" style="width:100%;background:var(--green);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;padding:10px;cursor:pointer;">Create Props Board for This Player</button>
+      </div>
+
+      <!-- Props Boards Container -->
+      <div id="propsBoardsContainer" style="padding:8px 12px;">
+        <div style="text-align:center;color:#444;font-size:12px;padding:20px 0">No props set up yet.<br>Click + Add Player to create a board.</div>
       </div>
     </div>
 
@@ -1144,162 +1225,156 @@
 
 <!-- PAYMENT MODAL -->
 <div class="modal-overlay" id="payModal">
-  <div class="modal">
-    <button class="modal-close" onclick="document.getElementById('payModal').classList.remove('open')">×</button>
+  <div class="modal" style="position:relative;">
+    <button class="modal-close" onclick="document.getElementById('payModal').classList.remove('open')">✕</button>
     <div class="modal-header">
-      <div class="modal-icon">💰</div>
-      <div class="modal-title">Confirm Payment</div>
-      <div class="modal-sub" id="modalSquaresLabel">5 Squares × $10</div>
+      <div class="modal-icon">💵</div>
+      <div class="modal-title">Payment Method</div>
+      <div class="modal-sub">Select how you want to pay for your squares.</div>
     </div>
     <div class="modal-body">
       <div class="modal-total">
-        <span class="modal-total-label">Amount Due</span>
+        <span class="modal-total-label" id="modalSquaresLabel">5 Squares × $10</span>
         <span class="modal-total-amount" id="modalTotal">$50.00</span>
       </div>
-      <div class="modal-input-label">Your Initials (3+ letters)</div>
-      <input type="text" class="modal-input" id="initialsInput" placeholder="ABC" oninput="checkInitials()" maxlength="10">
-      <div class="modal-cta" id="confirmBtn" onclick="confirmPurchase()">CONFIRM & LOCK IN</div>
+      <div class="modal-input-label">Your Initials (3 letters)</div>
+      <input type="text" maxlength="3" placeholder="ABC" class="modal-input" id="initialsInput" oninput="checkInitials()" />
+      <div class="modal-pay-grid">
+        <div class="modal-pay-option" onclick="selectPay(this)">
+          <div class="modal-pay-icon" style="background:#00D632;">$</div>
+          <div class="modal-pay-name">Cash App</div>
+        </div>
+        <div class="modal-pay-option selected" onclick="selectPay(this)">
+          <div class="modal-pay-icon" style="background:#0070ba;font-style:italic;font-size:13px;">P</div>
+          <div class="modal-pay-name">PayPal</div>
+        </div>
+        <div class="modal-pay-option" onclick="selectPay(this)">
+          <div class="modal-pay-icon" style="background:#555;">💵</div>
+          <div class="modal-pay-name">Cash</div>
+        </div>
+      </div>
+      <button class="modal-cta" id="confirmBtn" disabled onclick="confirmPurchase()">
+        ✓ I've Sent the Payment
+      </button>
     </div>
   </div>
 </div>
 
-<!-- CONFIRMATION MODAL -->
+<!-- CONFIRM MODAL -->
 <div class="modal-overlay" id="confirmModal">
   <div class="modal">
     <div class="confirm-modal">
       <div class="confirm-icon">✓</div>
-      <div class="confirm-title">LOCKED IN!</div>
-      <div class="confirm-msg" id="confirmMsg">5 squares × $10 = <strong style="color:white;">$50.00</strong><br><span style="color:var(--green-light);font-size:13px;margin-top:4px;display:block;">Your squares are locked in as <strong>ABC</strong> ✓ — visible to all players!</span></div>
-      <button class="confirm-btn" onclick="closeConfirm()">Got It</button>
+      <div class="confirm-title">SQUARES SECURED!</div>
+      <div class="confirm-msg" id="confirmMsg">1 square × $10 = <strong style="color:white;">$10.00</strong></div>
+      <div class="confirm-badge">
+        <div class="confirm-badge-text">Your squares are locked in!</div>
+        <div class="confirm-badge-sub">Please pay Willie in cash or via app</div>
+      </div>
+      <button class="confirm-btn" onclick="closeConfirm()">Got it!</button>
     </div>
   </div>
 </div>
 
 <script>
-// ── STATE ────────────────────────────────────────────────────
-let currentSport = 'NBA';
-let currentGame = null;
-let currentQty = 5;
-let currentBoardVersion = 'v1'; // v1 or v2
-let espnGames = {}; // { sport: [games...] }
-
-// ── STORAGE: API (Netlify) with localStorage fallback ──────────
-const _cache = {};
-const _sessionInitials = {};
-const STORE_KEY = 'parlaypro_squares_v1';
-
-let _apiAvailable = null;
-
-async function checkApi() {
-  _apiAvailable = true;
-  return true;
-}
-
-function isHosted() {
-  return _apiAvailable === true;
-}
-
-// ── localStorage helpers ──────────────────────────────────────
-function _lsLoad() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch { return {}; }
-}
-function _lsSave(store) {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch {}
-}
-function _lsGetGame(gameId) {
-  const store = _lsLoad();
-  return store[gameId] || { squares: [], owners: {} };
-}
-
-async function fetchSquares(gameId) {
-  await checkApi();
-  if (isHosted()) {
-    try {
-      const res = await fetch(`/api/squares?gameId=${encodeURIComponent(gameId)}`);
-      if (!res.ok) throw new Error('fetch failed');
-      const data = await res.json();
-      _cache[gameId] = data;
-      return data;
-    } catch (e) {
-      return _cache[gameId] || { squares: [], owners: {} };
-    }
-  } else {
-    const data = _lsGetGame(gameId);
-    _cache[gameId] = data;
-    return data;
+// ── ERROR HANDLING ──────────────────────────────────────────────
+function logStatus(msg, isError) {
+  const el = document.getElementById('statusBar');
+  if (el) {
+    el.textContent = (new Date()).toLocaleTimeString() + ' | ' + msg;
+    el.style.color = isError ? '#ef4444' : '#22c55e';
   }
+  if (isError) console.error('[ParlayPro]', msg);
+  else console.log('[ParlayPro]', msg);
 }
 
-function getMySquares(gameId) {
-  const data = _cache[gameId] || { squares: [], owners: {} };
-  const myInitials = _sessionInitials[gameId] || '';
-  if (!myInitials) return new Set();
-  return new Set(
-    Object.entries(data.owners)
-      .filter(([, v]) => v === myInitials)
-      .map(([k]) => Number(k))
-  );
-}
+window.onerror = function(msg, src, line, col, err) {
+  logStatus('JS Error: ' + msg + ' (line ' + line + ')', true);
+  return false;
+};
 
-function getInitialsForGame(gameId) {
-  return _sessionInitials[gameId] || '';
-}
+window.addEventListener('unhandledrejection', function(e) {
+  logStatus('Async Error: ' + (e.reason?.message || e.reason || 'Unknown'), true);
+});
 
-async function persistSquares(gameId, newIndices, initials) {
-  await checkApi();
-  if (isHosted()) {
-    const res = await fetch('/api/claim-square', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ gameId, initials, indices: newIndices })
-    });
-    const data = await res.json();
-    if (res.status === 409) throw new Error('conflict: ' + (data.conflicts || []).join(','));
-    if (!res.ok) throw new Error(data.error || 'claim failed');
-    _cache[gameId] = { squares: data.squares, owners: data.owners };
-    _sessionInitials[gameId] = initials;
-    return data;
-  } else {
-    const current = _lsGetGame(gameId);
-    const updatedOwners = { ...current.owners };
-    for (const idx of newIndices) updatedOwners[idx] = initials;
-    const updatedSquares = [...new Set([...current.squares, ...newIndices])];
-    const updated = { squares: updatedSquares, owners: updatedOwners };
-    const store = _lsLoad();
-    store[gameId] = updated;
-    _lsSave(store);
-    _cache[gameId] = updated;
-    _sessionInitials[gameId] = initials;
-    return updated;
-  }
-}
-
-// ── Sport mapping (frontend value → API value) ────────────────
+// ── STATE ────────────────────────────────────────────────────────
 const SPORT_MAP = {
   'NBA': 'nba', 'NHL': 'nhl', 'MLB': 'mlb', 'NFL': 'nfl',
   'MLS': 'mls', 'WNBA': 'wnba',
   'MM_MEN': 'ncaam', 'MM_WOMEN': 'ncaaw'
 };
 
+let currentSport = 'NBA';
+let currentGame = null;
+let currentDate = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+let currentQty = 5;
+let currentBoardVersion = null;
+let espnGames = {}; // { sport: [games...] }
+let _cache = {}; // { gameId: serverData }
+
+const INITIALS = ['WM','KJ','DT','AA','RB','LM','CP','JS','MB','TW','GH','PD','NT','BK','SC','FO','YI','QV','ZX','ER'];
+
+// ── DATE HELPERS ──────────────────────────────────────────────
+function initDatePicker() {
+  const picker = document.getElementById('gameDate');
+  if (!picker) return;
+  const today = new Date();
+  const maxDate = new Date(today);
+  maxDate.setDate(maxDate.getDate() + 14); // 2 weeks out
+  picker.value = currentDate;
+  picker.min = today.toISOString().slice(0, 10);
+  picker.max = maxDate.toISOString().slice(0, 10);
+}
+
+function changeDate(offset) {
+  const d = new Date(currentDate + 'T12:00:00');
+  d.setDate(d.getDate() + offset);
+  const today = new Date();
+  const maxDate = new Date(today);
+  maxDate.setDate(maxDate.getDate() + 14);
+  today.setHours(0,0,0,0);
+  maxDate.setHours(23,59,59,999);
+  if (d < today || d > maxDate) return;
+  currentDate = d.toISOString().slice(0, 10);
+  document.getElementById('gameDate').value = currentDate;
+  updateSport(currentSport);
+}
+
+function updateDateFromPicker(val) {
+  currentDate = val;
+  updateSport(currentSport);
+}
+
+function getEspnDateParam() {
+  return currentDate.replace(/-/g, ''); // YYYYMMDD format for ESPN
+}
+
 // ── ESPN API: Fetch real live data ────────────────────────────
 async function fetchEspnScores(sport) {
   try {
+    const dateStr = getEspnDateParam();
+    logStatus('Fetching ' + sport + ' for ' + currentDate + '...', false);
     const apiSport = SPORT_MAP[sport] || sport.toLowerCase();
-    const res = await fetch(`/api/scores?sport=${encodeURIComponent(apiSport)}`);
-    if (!res.ok) return null;
+    const res = await fetch(`/api/scores?sport=${encodeURIComponent(apiSport)}&date=${dateStr}`);
+    if (!res.ok) {
+      logStatus('ESPN API error: HTTP ' + res.status + ' for ' + sport, true);
+      return null;
+    }
     const data = await res.json();
     if (data && data.games) {
+      logStatus(sport + ': ' + data.games.length + ' games loaded', false);
       espnGames[sport] = data.games;
       return data;
     }
+    logStatus('No games data in response for ' + sport, true);
     return null;
   } catch (e) {
-    console.error('ESPN fetch failed:', e);
+    logStatus('ESPN fetch failed for ' + sport + ': ' + e.message, true);
     return null;
   }
 }
 
-// ── TICKER ───────────────────────────────────────────────────
+// ── TICKER ───────────────────────────────────────────────────────
 async function buildTicker() {
   const allSports = ['NBA', 'NHL', 'MLB', 'NFL', 'MLS'];
   let allGames = [];
@@ -1309,7 +1384,6 @@ async function buildTicker() {
   }
 
   if (!allGames.length) {
-    // Fallback: show static message
     const wrap = document.querySelector('.ticker-inner');
     if (wrap) wrap.innerHTML = '<div class="ticker-item">Loading live scores...</div>';
     return;
@@ -1326,13 +1400,12 @@ async function buildTicker() {
                   '<span class="ticker-badge badge-upcoming">TODAY</span>';
     return `<div class="ticker-item">
       ${badge}
-      <span class="ticker-teams">${g.away}</span>
+      <span style="color:var(--text2);">${g.away}</span>
       <span class="ticker-score">${scorePart}</span>
-      <span class="ticker-teams">${g.home}</span>
+      <span style="color:var(--text2);">${g.home}</span>
       ${isLive ? '<span class="status-dot status-live" style="font-size:8px;margin-left:4px;">●</span>' : ''}
     </div>`;
   }).join('');
-  // Duplicate for seamless scroll
   wrap.innerHTML += wrap.innerHTML;
 }
 
@@ -1345,8 +1418,6 @@ function shuffle(arr) {
   }
   return a;
 }
-
-const INITIALS = ['WM','KJ','DT','AA','RB','LM','CP','JS','MB','TW','GH','PD','NT','BK','SC','FO','YI','QV','ZX','ER'];
 
 async function buildGrid(game) {
   if (!game) return;
@@ -1367,131 +1438,97 @@ async function buildGrid(game) {
   document.getElementById('availableCount').textContent = available;
 
   let html = '';
-  // Corner cell — away team (left axis)
   html += `<div class="axis-header axis-corner" style="font-size:9px;color:var(--text3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center;">
     <span style="font-weight:700;color:var(--text2);">${game.away}</span>
     ${game.status==='LIVE'?`<span style="color:var(--yellow);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;">${game.awayScore||0}</span>`:''}
   </div>`;
 
-  // Top team banner — home team
   html += `<div class="team-banner">${game.home}${game.status==='LIVE'?` &nbsp; <span style="color:var(--yellow)">${game.homeScore||0}</span>`:''}</div>`;
 
-  // Number row header
-  html += `<div class="axis-header axis-corner"></div>`;
-  topNums.forEach(n => {
-    html += `<div class="axis-header axis-top">${n}</div>`;
+  html += `<div class="axis-header axis-corner" style="font-size:9px;color:var(--text3);"></div>`;
+  topNums.forEach(num => {
+    html += `<div class="axis-header axis-top">${num}</div>`;
   });
 
-  // Rows
-  for (let r = 0; r < 10; r++) {
-    html += `<div class="axis-header axis-left">${leftNums[r]}</div>`;
-    for (let c = 0; c < 10; c++) {
-      const idx = r * 10 + c;
-      if (mine.has(idx)) {
-        html += `<div class="cell cell-mine">${myInitials}</div>`;
-      } else if (serverOwners[idx] !== undefined) {
-        html += `<div class="cell cell-sold">${serverOwners[idx]}</div>`;
-      } else if (sold.has(idx)) {
-        html += `<div class="cell cell-sold">${INITIALS[idx % INITIALS.length]}</div>`;
-      } else {
-        html += `<div class="cell cell-open"></div>`;
-      }
+  for (let i = 0; i < 10; i++) {
+    html += `<div class="axis-header axis-left">${leftNums[i]}</div>`;
+    for (let j = 0; j < 10; j++) {
+      const idx = i * 10 + j;
+      const isMine = mine.has(idx);
+      const isSold = sold.has(idx);
+      const owner = serverOwners[idx] || (isMine ? myInitials : null);
+      const cellClass = isMine ? 'cell-mine' : isSold ? 'cell-sold' : 'cell-open';
+      html += `<div class="cell ${cellClass}" data-idx="${idx}">${owner || ''}</div>`;
     }
   }
 
   document.getElementById('squaresGrid').innerHTML = html;
-
-  // Set up polling
-  if (window._pollTimer) clearInterval(window._pollTimer);
-  window._pollTimer = setInterval(async function() {
-    if (!window.currentGame || window.currentGame.id !== game.id) return;
-    try {
-      var r = await fetch('/api/squares?gameId=' + game.id);
-      var data = await r.json();
-      if (!data || !data.owners) return;
-      var owners = data.owners;
-      var cells = document.querySelectorAll('.cell');
-      var i = 0;
-      cells.forEach(function(cell) {
-        if (owners[i] !== undefined && !cell.classList.contains('cell-mine')) {
-          cell.className = 'cell cell-sold';
-          cell.textContent = owners[i];
-        }
-        i++;
-      });
-    } catch(e) {}
-  }, 10000);
 }
 
-// ── ODDS PANEL ───────────────────────────────────────────────
-function fmt(n) { return n > 0 ? `+${n}` : `${n}`; }
-
+// ── ODDS BUILDER ─────────────────────────────────────────────
 function buildOdds(game) {
   if (!game) return;
-
-  const statusHtml = game.status === 'LIVE'
-    ? `<span class="status-dot status-live">${game.period || 'Q4'}</span>`
-    : `<span class="status-dot status-scheduled">${game.time || game.period || ''}</span>`;
-
-  document.querySelector('.parlay-section .section-label').innerHTML = `Parlay Board ${statusHtml}`;
-
-  // Use fallback odds if ESPN doesn't provide them
-  const spread = game.spread || { awayLine: '+3.5', homeLine: '-3.5', awayOdds: -110, homeOdds: -110 };
-  const total = game.total || { line: 220.5, over: -110, under: -110 };
-  const ml = game.ml || { away: 150, home: -180 };
-
-  document.querySelector('.odds-grid').innerHTML = `
-    <div class="odds-col">
-      <div class="odds-btn" onclick="toggleOdds(this)">
-        <div class="odds-btn-label">${game.away} ${spread.awayLine}</div>
-        <div class="odds-value">${fmt(spread.awayOdds)}</div>
-      </div>
-      <div class="odds-btn" onclick="toggleOdds(this)">
-        <div class="odds-btn-label">${game.home} ${spread.homeLine}</div>
-        <div class="odds-value">${fmt(spread.homeOdds)}</div>
-      </div>
-    </div>
-    <div class="odds-col">
-      <div class="odds-btn" onclick="toggleOdds(this)">
-        <div class="odds-btn-label">Over ${total.line}</div>
-        <div class="odds-value">${fmt(total.over)}</div>
-      </div>
-      <div class="odds-btn" onclick="toggleOdds(this)">
-        <div class="odds-btn-label">Under ${total.line}</div>
-        <div class="odds-value">${fmt(total.under)}</div>
-      </div>
-    </div>
-    <div class="odds-col">
-      <div class="odds-btn" onclick="toggleOdds(this)">
-        <div class="odds-btn-label">${game.away} ML</div>
-        <div class="odds-value">${fmt(ml.away)}</div>
-      </div>
-      <div class="odds-btn" onclick="toggleOdds(this)">
-        <div class="odds-btn-label">${game.home} ML</div>
-        <div class="odds-value">${fmt(ml.home)}</div>
-      </div>
-    </div>`;
-
-  // Clear legs
-  document.querySelector('.legs-section').innerHTML = `
-    <div class="legs-title">Selected Legs (0)</div>
-    <div style="font-size:11px;color:var(--text3);padding:4px 0;">Click odds above to add legs</div>`;
 }
 
 // ── BOARD HEADER ─────────────────────────────────────────────
 function updateBoardHeader(game) {
   if (!game) return;
-  document.querySelector('.board-title').textContent = `${game.away} @ ${game.home}`;
+  const d = new Date(currentDate + 'T12:00:00');
+  document.getElementById('live-date').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
 
-  document.querySelectorAll('.game-row').forEach(row => {
-    row.classList.toggle('active', row.dataset.id === game.id);
+// ── SERVER SYNC ──────────────────────────────────────────────
+async function fetchSquares(gameId) {
+  try {
+    logStatus('Loading squares for game ' + gameId + '...', false);
+    const res = await fetch(`/api/squares?gameId=${encodeURIComponent(gameId)}`);
+    if (!res.ok) {
+      logStatus('Squares API error: HTTP ' + res.status + ' for game ' + gameId, true);
+      return _cache[gameId] || { owners: {} };
+    }
+    const data = await res.json();
+    _cache[gameId] = data || { owners: {} };
+    const ownCount = Object.keys((_cache[gameId].owners || {})).length;
+    logStatus('Game ' + gameId + ': ' + ownCount + ' squares claimed', false);
+    return _cache[gameId];
+  } catch (e) {
+    logStatus('Fetch squares failed: ' + e.message, true);
+    return _cache[gameId] || { owners: {} };
+  }
+}
+
+function getMySquares(gameId) {
+  const key = `my_${gameId}`;
+  const stored = localStorage.getItem(key);
+  return new Set(stored ? JSON.parse(stored) : []);
+}
+
+function getInitialsForGame(gameId) {
+  return localStorage.getItem(`initials_${gameId}`);
+}
+
+async function persistSquares(gameId, indices, initials) {
+  logStatus('Claiming ' + indices.length + ' squares as ' + initials + '...', false);
+  const res = await fetch('/api/claim-square', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gameId, indices, initials })
   });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    logStatus('Claim failed: ' + (err.error || 'HTTP ' + res.status), true);
+    throw new Error(err.error || 'Failed to persist squares');
+  }
+  logStatus('Claimed ' + indices.length + ' squares as ' + initials + ' ✓', false);
+  localStorage.setItem(`my_${gameId}`, JSON.stringify(indices));
+  localStorage.setItem(`initials_${gameId}`, initials);
+  _cache[gameId] = null;
 }
 
 // ── SIDEBAR GAMES LIST ───────────────────────────────────────
 function buildGamesList(sport) {
   const games = espnGames[sport] || [];
-  const list = document.querySelector('#gamesList');
+  const list = document.querySelector('.games-list');
   if (!list) return;
 
   list.innerHTML = games.map(g => `
@@ -1517,21 +1554,19 @@ function populateGameDropdown(sport) {
 
 // ── LOAD GAME ────────────────────────────────────────────────
 async function loadGame(game) {
-  if (!game) return;
+  if (!game) { logStatus('loadGame called with no game', true); return; }
+  logStatus('Loading game: ' + game.away + ' @ ' + game.home + ' (ID: ' + game.id + ')', false);
   currentGame = game;
-
-  // Apply board version suffix to game ID
-  const versionedId = currentBoardVersion ? `${game.id}-${currentBoardVersion}` : game.id;
-  const versionedGame = { ...game, id: versionedId };
-
-  await buildGrid(versionedGame);
+  try {
+    await buildGrid(game);
+  } catch (e) {
+    logStatus('buildGrid error: ' + e.message, true);
+  }
 
   if (window._pollTimer) clearInterval(window._pollTimer);
   window._pollTimer = setInterval(async function() {
     if (currentGame && currentGame.id === game.id) {
-      const versionedId = currentBoardVersion ? `${game.id}-${currentBoardVersion}` : game.id;
-      const versionedGame = { ...game, id: versionedId };
-      await buildGrid(versionedGame);
+      try { await buildGrid(currentGame); } catch (e) { logStatus('Poll error: ' + e.message, true); }
     }
   }, 15000);
 
@@ -1546,32 +1581,18 @@ async function loadGame(game) {
   });
 }
 
-// ── BOARD TABS ───────────────────────────────────────────────
-function switchBoard(version) {
-  currentBoardVersion = version;
-  document.querySelectorAll('.board-tab').forEach((tab, i) => {
-    tab.classList.toggle('active', (i === 0 && version === 'v1') || (i === 1 && version === 'v2'));
-  });
-  if (currentGame) loadGame(currentGame);
-}
-
-// ── REFRESH ───────────────────────────────────────────────────
-async function refreshBoard() {
-  await buildTicker();
-  if (currentGame) await loadGame(currentGame);
-  alert('Scores refreshed!');
-}
-
 // ── EVENT HANDLERS ───────────────────────────────────────────
 async function updateSport(sport) {
+  logStatus('Switching to ' + sport + '...', false);
   currentSport = sport;
   const data = await fetchEspnScores(sport);
   if (!data || !data.games || !data.games.length) {
-    alert('No games found for ' + sport);
+    logStatus('No games found for ' + sport, true);
     return;
   }
   populateGameDropdown(sport);
   buildGamesList(sport);
+  logStatus('Auto-selecting first game: ' + data.games[0].away + ' @ ' + data.games[0].home, false);
   await loadGame(data.games[0]);
 }
 
@@ -1613,22 +1634,11 @@ function toggleOdds(btn) {
   legsSection.innerHTML = html;
 }
 
-function getPrice() {
-  const el = document.getElementById('squarePrice');
-  return el ? parseFloat(el.value) || 10 : 10;
-}
-
-function updatePriceDisplay(val) {
-  const p = parseFloat(val) || 10;
-  const qty = currentQty || 5;
-  document.getElementById('totalAmount').textContent = `$${(qty * p).toFixed(2)}`;
-}
-
 function setQty(n, btn) {
   currentQty = n;
-  const price = getPrice();
   document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  const price = parseFloat(document.getElementById('squarePrice').value) || 10;
   document.getElementById('totalAmount').textContent = `$${(n * price).toFixed(2)}`;
   document.getElementById('totalSquares').textContent = `${n} Square${n > 1 ? 's' : ''}`;
   updateCTA();
@@ -1640,13 +1650,29 @@ function updateCTA() {
     BUY ${currentQty} SQUARE${currentQty > 1 ? 'S' : ''} NOW`;
 }
 
+function updatePriceDisplay(val) {
+  const p = parseFloat(val);
+  window._squarePrice = p;
+  const qty = currentQty || 5;
+  const lbl = document.getElementById('modalSquaresLabel');
+  const tot = document.getElementById('modalTotal');
+  if (lbl) lbl.textContent = qty + ' Square' + (qty > 1 ? 's' : '') + ' × $' + p;
+  if (tot) tot.textContent = '$' + (qty * p).toFixed(2);
+  document.getElementById('totalAmount').textContent = `$${(qty * p).toFixed(2)}`;
+}
+
 function openPayModal() {
-  const price = getPrice();
+  const price = parseFloat(document.getElementById('squarePrice').value) || 10;
   document.getElementById('modalSquaresLabel').textContent = `${currentQty} Square${currentQty > 1 ? 's' : ''} × $${price}`;
   document.getElementById('modalTotal').textContent = `$${(currentQty * price).toFixed(2)}`;
   document.getElementById('initialsInput').value = '';
   document.getElementById('confirmBtn').disabled = true;
   document.getElementById('payModal').classList.add('open');
+}
+
+function selectPay(el) {
+  document.querySelectorAll('.modal-pay-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
 }
 
 function checkInitials() {
@@ -1660,16 +1686,10 @@ async function confirmPurchase() {
   btn.textContent = 'Locking in...';
 
   const game = currentGame;
-  if (!game) {
-    alert('No game selected');
-    return;
-  }
-
-  const versionedId = currentBoardVersion ? `${game.id}-${currentBoardVersion}` : game.id;
-  const serverData = _cache[versionedId] || await fetchSquares(versionedId);
+  const serverData = _cache[game.id] || await fetchSquares(game.id);
   const serverOwned = new Set(Object.keys(serverData.owners || {}).map(Number));
-  const sold = new Set([...game.sold || [], ...serverOwned]);
-  const mine = getMySquares(versionedId);
+  const sold = new Set([...(game.sold || []), ...serverOwned]);
+  const mine = getMySquares(game.id);
   (game.mine || []).forEach(i => mine.add(i));
 
   const open = [];
@@ -1681,7 +1701,7 @@ async function confirmPurchase() {
   const newIdxs = shuffled.slice(0, toAdd);
 
   try {
-    await persistSquares(versionedId, newIdxs, initials);
+    await persistSquares(game.id, newIdxs, initials);
   } catch (e) {
     btn.disabled = false;
     btn.textContent = 'CONFIRM & LOCK IN';
@@ -1690,13 +1710,13 @@ async function confirmPurchase() {
   }
 
   document.getElementById('payModal').classList.remove('open');
+  const price = parseFloat(document.getElementById('squarePrice').value) || 10;
   document.getElementById('confirmMsg').innerHTML =
-    `${toAdd} square${toAdd > 1 ? 's' : ''} × $${getPrice()} = <strong style="color:white;">$${(toAdd * getPrice()).toFixed(2)}</strong>` +
-    `<br><span style="color:var(--green-light);font-size:13px;margin-top:4px;display:block;">Your squares are locked in as <strong>${initials}</strong> ✓ — visible to all players!</span>`;
+    `${toAdd} square${toAdd > 1 ? 's' : ''} × $${price} = <strong style="color:white;">$${(toAdd * price).toFixed(2)}</strong>` +
+    `<br><span style="color:var(--green-light);font-size:13px;margin-top:4px;display:block;">Your squares are locked in as <strong>${initials}</strong> ✓ visible to all players!</span>`;
   setTimeout(() => {
     document.getElementById('confirmModal').classList.add('open');
-    const versionedGame = { ...game, id: versionedId };
-    buildGrid(versionedGame);
+    buildGrid(game);
   }, 150);
 }
 
@@ -1704,8 +1724,9 @@ function closeConfirm() {
   document.getElementById('confirmModal').classList.remove('open');
 }
 
-function lockNumbers(game) {
-  if (!game) { alert('No game selected'); return; }
+// ── ADMIN ────────────────────────────────────────────────────
+async function lockNumbers(game) {
+  if (!game) { location.reload(); return; }
   var topCells = document.querySelectorAll('.axis-header.axis-top');
   var leftCells = document.querySelectorAll('.axis-header.axis-left');
   var rowNums = Array.from(topCells).map(function(el){ return parseInt(el.textContent.trim()); });
@@ -1723,33 +1744,64 @@ function lockNumbers(game) {
   }).catch(function(e){ alert('Error: ' + e.message); });
 }
 
-function adminReset() {
-  if (!currentGame) { alert('No game selected'); return; }
-  var pin = prompt('Enter admin PIN to reset board:');
+async function adminReset() {
+  // Try to get game from currentGame or from the dropdown
+  var game = window.currentGame;
+  if (!game) {
+    var sel = document.getElementById('gameSelect');
+    if (sel && sel.value) {
+      for (var sp of Object.keys(espnGames)) {
+        var found = (espnGames[sp] || []).find(function(g) { return g.id === sel.value; });
+        if (found) { game = found; window.currentGame = found; break; }
+      }
+    }
+  }
+  if (!game) {
+    await updateSport(currentSport || 'NBA');
+    game = window.currentGame;
+  }
+  if (!game) { alert('No game loaded. Pick a sport and game first.'); return; }
+
+  var pin = prompt('Enter admin PIN to reset board for ' + game.away + ' @ ' + game.home + ':');
   if (!pin) return;
-  const gameId = currentBoardVersion ? `${currentGame.id}-${currentBoardVersion}` : currentGame.id;
   fetch('/api/reset-squares', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({gameId: gameId, pin: pin})
-  }).then(function(r){ return r.json(); }).then(function(d){
+    body: JSON.stringify({gameId: game.id, pin: pin})
+  }).then(function(r) {
+    return r.json();
+  }).then(function(d) {
     if (d.ok) {
-      alert('Board cleared!');
-      const versionedGame = { ...currentGame, id: gameId };
-      buildGrid(versionedGame);
+      // Clear server cache AND localStorage for this game
+      _cache = {};
+      localStorage.removeItem('my_' + game.id);
+      localStorage.removeItem('initials_' + game.id);
+      alert('Board cleared for ' + game.away + ' @ ' + game.home + '!');
+      buildGrid(game);
     } else {
       alert('Error: ' + (d.error || 'failed'));
     }
-  }).catch(function(e){ alert('Network error'); });
+  }).catch(function(e) {
+    alert('Network error: ' + e.message);
+  });
 }
 
 // ── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  await buildTicker();
-  await updateSport('NBA');
+  logStatus('Page loading...', false);
+  try {
+    initDatePicker();
+    // Load game FIRST (don't wait for ticker)
+    await updateSport('NBA');
+    logStatus('Page ready ✓ | Game: ' + (currentGame ? currentGame.away + ' @ ' + currentGame.home : 'NONE'), !currentGame);
+    // Load ticker in background (don't block)
+    buildTicker().catch(e => logStatus('Ticker error: ' + e.message, true));
+  } catch (e) {
+    logStatus('INIT FAILED: ' + e.message, true);
+  }
 });
 </script>
 
+<script src="/props.js"></script>
 </body>
 </html>
-
