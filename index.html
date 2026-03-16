@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <!-- v20260316081114 -->
 <html lang="en">
 <head>
@@ -1274,10 +1274,18 @@ async function persistSquares(gameId, newIndices, initials) {
   }
 }
 
+// ── Sport mapping (frontend value → API value) ────────────────
+const SPORT_MAP = {
+  'NBA': 'nba', 'NHL': 'nhl', 'MLB': 'mlb', 'NFL': 'nfl',
+  'MLS': 'mls', 'WNBA': 'wnba',
+  'MM_MEN': 'ncaam', 'MM_WOMEN': 'ncaaw'
+};
+
 // ── ESPN API: Fetch real live data ────────────────────────────
 async function fetchEspnScores(sport) {
   try {
-    const res = await fetch(`/api/scores?sport=${encodeURIComponent(sport)}`);
+    const apiSport = SPORT_MAP[sport] || sport.toLowerCase();
+    const res = await fetch(`/api/scores?sport=${encodeURIComponent(apiSport)}`);
     if (!res.ok) return null;
     const data = await res.json();
     if (data && data.games) {
