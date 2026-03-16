@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <!-- v20260316081114 -->
 <html lang="en">
 <head>
@@ -1042,7 +1042,7 @@
       <div class="buy-section">
         <div class="buy-meta">
           <span class="buy-meta-label">Price per Square</span>
-          <span class="buy-meta-value">$10.00</span>
+          <select id="squarePrice" class="buy-meta-value" onchange="updatePriceDisplay(this.value)" style="background:#1a1a1a;border:1px solid #333;color:#22c55e;font-size:inherit;font-weight:700;padding:2px 8px;border-radius:6px;cursor:pointer;outline:none;"><option value="5">$5</option><option value="10" selected>$10</option><option value="15">$15</option><option value="20">$20</option><option value="25">$25</option><option value="30">$30</option><option value="40">$40</option><option value="50">$50</option><option value="75">$75</option><option value="100">$100</option><option value="150">$150</option><option value="200">$200</option></select>
         </div>
 
         <!-- Qty -->
@@ -1613,11 +1613,23 @@ function toggleOdds(btn) {
   legsSection.innerHTML = html;
 }
 
+function getPrice() {
+  const el = document.getElementById('squarePrice');
+  return el ? parseFloat(el.value) || 10 : 10;
+}
+
+function updatePriceDisplay(val) {
+  const p = parseFloat(val) || 10;
+  const qty = currentQty || 5;
+  document.getElementById('totalAmount').textContent = `$${(qty * p).toFixed(2)}`;
+}
+
 function setQty(n, btn) {
   currentQty = n;
+  const price = getPrice();
   document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById('totalAmount').textContent = `$${(n * 10).toFixed(2)}`;
+  document.getElementById('totalAmount').textContent = `$${(n * price).toFixed(2)}`;
   document.getElementById('totalSquares').textContent = `${n} Square${n > 1 ? 's' : ''}`;
   updateCTA();
 }
@@ -1629,8 +1641,9 @@ function updateCTA() {
 }
 
 function openPayModal() {
-  document.getElementById('modalSquaresLabel').textContent = `${currentQty} Square${currentQty > 1 ? 's' : ''} × $10`;
-  document.getElementById('modalTotal').textContent = `$${(currentQty * 10).toFixed(2)}`;
+  const price = getPrice();
+  document.getElementById('modalSquaresLabel').textContent = `${currentQty} Square${currentQty > 1 ? 's' : ''} × $${price}`;
+  document.getElementById('modalTotal').textContent = `$${(currentQty * price).toFixed(2)}`;
   document.getElementById('initialsInput').value = '';
   document.getElementById('confirmBtn').disabled = true;
   document.getElementById('payModal').classList.add('open');
@@ -1678,7 +1691,7 @@ async function confirmPurchase() {
 
   document.getElementById('payModal').classList.remove('open');
   document.getElementById('confirmMsg').innerHTML =
-    `${toAdd} square${toAdd > 1 ? 's' : ''} × $10 = <strong style="color:white;">$${(toAdd * 10).toFixed(2)}</strong>` +
+    `${toAdd} square${toAdd > 1 ? 's' : ''} × $${getPrice()} = <strong style="color:white;">$${(toAdd * getPrice()).toFixed(2)}</strong>` +
     `<br><span style="color:var(--green-light);font-size:13px;margin-top:4px;display:block;">Your squares are locked in as <strong>${initials}</strong> ✓ — visible to all players!</span>`;
   setTimeout(() => {
     document.getElementById('confirmModal').classList.add('open');
@@ -1739,3 +1752,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 </body>
 </html>
+
