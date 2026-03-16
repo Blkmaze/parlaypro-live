@@ -1,621 +1,178 @@
 // Zero imports - uses Netlify Blobs REST API with the token injected at runtime
-
 const SITE_ID = "658f40e1-9d0f-4072-80a5-d6d0eb35d77e";
-
 const STORE = "sq3";
-
 const ADMIN_PIN = process.env.ADMIN_PIN || "1234";
-
+ 
 function json(data, status = 200) {
-
   return new Response(JSON.stringify(data), {
-
-                          status,
-
-        headers: { "Content-Type": "application/json" }
-
+    status,
+    headers: { "Content-Type": "application/json" }
   });
-
 }
-
+ 
 async function blobGet(token, key) {
-
   const r = await fetch(`https://api.netlify.com/api/v1/blobs/${SITE_ID}/${STORE}/${key}`, {
-
-                            headers: { Authorization: `Bearer ${token}` }
-
+    headers: { Authorization: `Bearer ${token}` }
   });
-
   if (r.status === 404) return null;
-
   if (!r.ok) return null;
-
   return r.json();
-
 }
-
+ 
 async function blobSet(token, key, value) {
-
   const r = await fetch(`https://api.netlify.com/api/v1/blobs/${SITE_ID}/${STORE}/${key}`, {
-
-                            method: "PUT",
-
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-
-        body: JSON.stringify(value)
-
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(value)
   });
-
   if (!r.ok) throw new Error(`Blob write failed: ${r.status}`);
-
 }
-
+ 
 // ── ROUTE HANDLER ─────────────────────────────────────────────
-
 export default async (req, context) => {
-
-    const url = new URL(req.url);
-
-    const path = url.pathname;
-
-    const method = req.method.toUpperCase();
-
-    const token = process.env.NETLIFY_TOKEN;
-
-    const emptyBoard = { owners: {}, rowNums: null, /c/o lZNeurmos :i mnpuolrlt,s  n-u mubseerss LNoectkleidf:y  fBallosbes  }R;E
-S
-T   A/P/I  ──w iGtEhT  t/haep it/oskqeuna riensj e──c──t──e──d── ──a──t── ──r──u──n──t──i──m──e──
-──
-──c──o
-n
-s t  iSfI T(Ep_aItDh  == ="=6 5"8/fa4p0ie/1s-q9uda0rfe-s4"0 7&2&- 8m0eat5h-odd6 d=0=e=b 3"5GdE7T7"e)" ;{
-
-
-
-c o n s tc oSnTsOtR Eg a=m e"Isdq 3=" ;u
-  r
-  lc.osnesatr cAhDPMaIrNa_mPsI.Ng e=t (p"rgoacmeesIsd."e)n;v
-  .
-    A D M I Ni_fP I(N! g|a|m e"I1d2)3 4r"e;t
-  u
-  rfnu njcstoino(n{  jesrorno(rd:a t"aM,i ssstiantgu sg a=m e2I0d0")  }{,
-
-4 0 0r)e;t
-  u
-  r n   n eiwf  R(e!stpooknesne)( JrSeOtNu.rsnt rjisnogni(feym(pdtaytBao)a,r d{)
-  ;
-
-
-        s ttartyu s{,
-
-
-
-                   h ecaodnesrts :d a{t a" C=o natweanitt- Tbylpoeb"G:e t"(atpopkleinc,a tgiaomne/Ijds)o n|"|  }e
-    m
-    p t y}B)o;a
-  r
-  d};
-
-
-
-a s y n c   fruentcutrino nj sbolno(bdGaetta()t;o
-k
-e n ,   k}e yc)a t{c
-                   h
-                     ( ecrorn)s t{ 
-                   r
-                       =   a w a irte tfuertnc hj(s`ohnt(t{p so:w/n/earpsi:. n{e}t,l iefryr.ocro:m /earpri./mve1s/sbalgoeb s}/)$;{
-                       S
-                       I T E _ I}D
-                       }
-                       / $ {}S
-                       T
-                       O R E/}// $──{ kPeOyS}T` ,/ a{p
-                                                  i
-                     / c l a ihme-asdqeurasr:e  {── ──A──u──t──h──o──r──i──z──a──t──i──o──n──:── 
-                     `
-                     B e airfe r( p$a{ttho k=e=n=} `" /}a
-                     p
-                                                 i / c}l)a;i
-                     m
-                     - s qiufa r(er". s&t&a tmuest h=o=d=  =4=0=4 )" PrOeStTu"r)n  {n
-                                                                                    u
-                                                                                    l l ; 
-
-                     i f  i(f! t(o!kre.no)k )r erteutrunr nj snounl(l{; 
-                                                                                    e
-                                                                      r r orre:t u"rSne rrv.ejrs onno(t) ;c
-                                                                        o
-                                                                      n}f
-                                                                                    i
-                                                                                    gausryendc  (fmuinscstiinogn  NbElToLbISFeYt_(TtOoKkEeNn),"  k}e,y ,5 0v0a)l;u
-                                                                                                 e
-                                                                                      )   { 
-
-                                                                                    l e tc obnosdty ;r
-
-                                                                                    =   a w atirty  f{e tbcohd(y` h=t tapwsa:i/t/ arpeiq..njestolni(f)y;. c}o mc/aatpcih/ v{1 /rbeltoubrsn/ $j{sSoInT(E{_ IeDr}r/o$r{:S T"OIRnEv}a/l$i{dk eJyS}O`N,  b{o
-                                                                                                                                                                                                                                                       d
-                                                                                                                                                                                                                                                       y "   } ,m e4t0h0o)d;:  }"
-                                                                                                                                                                                                                                                       P
-                                                                                                                                                                                                                                                       U T " , 
-                                                                                                                                                                                                                                                         c
-                                                                                                                                                                                                                                                       o n s t  h{e agdaemresI:d ,{  iAnudtihcoersi,z aitniiotni:a l`sB e}a r=e rb o$d{yt;o
-                                                                                                                                                                                                                                                       k
-                                                                                                                                                                                                                                                       e n } ` ,i f" C(o!ngtaemnetI-dT y|p|e "!:A r"raapyp.liiscAartriaoyn(/ijnsdoinc"e s}), 
-                                                                                                                                                                                                                                                         |
-                                                                                                                                                                                                                                                         |   ! i nbiotdiya:l sJ)S O{N
-                                                                                                                                                                                                                                                                                    .
-                                                                                                                                                                                                                                                         s t r i n g irfeyt(uvranl ujes)o
-                                                                                                                                                                                                                                                                                    n
-                                                                                                                                                                                                                                                                                    ( {  }e)r;r
-                                                                                                                                                                                                                                                                                    o
-                                                                                                                                                                                                                                                                                    r :  i"fM i(s!sri.nogk )g atmherIodw,  nienwd iEcrerso,r (o`rB lionbi twirailtse"  f}a,i l4e0d0:) ;$
-                                                                                                                                                                                                                                                       {
-                                                                                                                                                                                                                                                         r . s t a}t
-                                                                                                                                                                                                                                                       u
-                                                                                                                                                                                                                                                       s } ` ) ;i
-                                                                                                                                                                                                                                                       f
-                                                                                                                                                                                                                                                        }(
-                                                                                                                                                                                                                                                        i
-                                                                                                                                                                                                                                                        n/i/t i─a─ lRsO.UlTeEn gHtAhN D<L E2R  |─|── ──i──n──i──t──i──a──l──s──.──l──e──n──g──t──h── ──>── ──6──)── 
-                                                                                                                                                                                                                                                        {
-                                                                                                                                                                                                                                                        
-                                                                                                                                                                                                                                                        e
-                                                                                                                                                                                                                                                        x p o r t   dreeftauurlnt  jassoynn(c{  (errerqo,r :c o"nItneixtti)a l=s>  m{u
-                                                                                                                                                                                                                                                        s
-                                                                                                                                                                                                                                                        t   bceo n2s-t6  ucrhla r=a cnteewr sU"R L}(,r e4q0.0u)r;l
-                                                                                                                                                                                                                                                        )
-                                                                                                                                                                                                                                                        ; 
-                                                                                                                                                                                                                                                         
-                                                                                                                                                                                                                                                             }c
-                                                                                                                                                                                                                                                             o
-                                                                                                                                                                                                                                                             n s t   ptartyh  {=
-                                                                                                                                                                                                                                                              
-                                                                                                                                                                                                                                                              u r l . p a tchonnasmte ;d
-                                                                                                                                                                                                                                                              a
-                                                                                                                                                                                                                                                              t a  c=o naswta imte tbhloodb G=e tr(etqo.kmeent,h ogda.mteoIUdp)p e|r|C aesmep(t)y;B
-                                                                                                                                                                                                                                                              o
-                                                                                                                                                                                                                                                              a r dc;o
-                                                                                                                                                                                                                                                              n
-                                                                                                                                                                                                                                                              s t   t o k ecno n=s tp roowcneesrss. e=n vd.aNtEaT.LoIwFnYe_rTsO K|E|N ;{
-                                                                                                                                                                                                                                                              }
-                                                                                                                                                                                                                                                              ; 
-                                                                                                                                                                                                                                                               
-                                                                                                                                                                                                                                                               c o n s t   e/m/p tCyhBeocakr df o=r  {c oonwfnleircst:s 
-                                                                                                                                                                                                                                                               {
-                                                                                                                                                                                                                                                               } ,   r o w Ncuomnss:t  ncuolnlf,l iccotlsN u=m si:n dniuclels,. fniulmtbeerr(siL o=c>k eodw:n efrasl[sie]  }!;=
-                                                                                                                                                                                                                                                               =
-                                                                                                                                                                                                                                                                 u n/d/e f──i nGeEdT) ;/
-                                                                                                                                                                                                                                                                 a
-                                                                                                                                                                                                                                                                 p i / s q u airfe s( c──o──n──f──l──i──c──t──s──.──l──e──n──g──t──h── ──>── ──0
-                                                                                                                                                                                                                                                                 )
-                                                                                                                                                                                                                                                                   { 
-                                                                                                                                                                                                                                                                   i
-                                                                                                                                                                                                                                                                   f   ( p a t h   =r=e=t u"r/na pjis/osnq(u{a reersr"o r&:&  `mSeqtuhaorde s= =a=l r"eGaEdTy" )t a{k
-                                                                                                                                                                                                                                                                                                                                                                    e
-                                                                                                                                                                                                                                                                                                                                                                    n :   $ {ccoonnsftl igcatmse.Ijdo i=n (u"r,l ."s)e}a`r c}h,P a4r0a9m)s;.
-                                                                                                                                                                                                                                                                                                                                                                    g
-                                                                                                                                                                                                                                                                                                                                                                    e t ( " g a m}e
-                                                                                                                                                                                                                                                                                                                                                                    I
-                                                                                                                                                                                                                                                                                                                                                                    d " ) ; 
-                                                                                                                                                                                                                                                                                                                                                                     
-                                                                                                                                                                                                                                                                                                                                                                       / /   Cilfa i(m! gsaqmueaIrde)s 
-                                                                                                                                                                                                                                                                                                                                                                       r
-                                                                                                                                                                                                                                                                                                                                                                       e t u r n   jisnodni(c{e se.rfroorrE:a c"hM(iis s=i>n g{  goawmneeIrds"[ i}],  =4 0i0n)i;t
-                                                                                                                                                                                                                                                                                                                                                                       i
-                                                                                                                                                                                                                                                                                                                                                                       a l s . tiofU p(p!etroCkaesne)( )r;e t}u)r;n
-                                                                                                                                                                                                                                                                                                                                                                        
-                                                                                                                                                                                                                                                                                                                                                                        j s o n ( e mdpattyaB.ooawrnde)r;s
-                                                                                                                                                                                                                                                                                                                                                                         
-                                                                                                                                                                                                                                                                                                                                                                         =   o w nterrys ;{
-                                                                                                                                                                                                                                                                                                                                                                         
-                                                                                                                                                                                                                                                                                                                                                                         
-                                                                                                                                                                                                                                                                                                                                                                         
-                                                                                                                                                                                                                                                                                                                                                                                     acwoanistt  bdlaotbaS e=t (atwoakietn ,b lgoabmGeeItd(,t odkaetna,) ;g
-                                                                                                                                                                                                                                                                                                                                                                                     a
-                                                                                                                                                                                                                                                                                                                                                                                     m e I d )   |r|e teumrpnt yjBsooanr(d{; 
-                                                                                                                                                                                                                                                                                                                                                                                     o
-                                                                                                                                                                                                                                                                                                                                                                                     k :   t r u er,e tculrani mjesdo:n (idnadtiac)e;s
-                                                                                                                                                                                                                                                                                                                                                                                     ,
-                                                                                                                                                                                                                                                                                                                                                                                       i n i t}i aclast:c hi n(ietrira)l s{.
-                                                                                                                                                                                                                                                                                                                                                                                       t
-                                                                                                                                                                                                                                                                                                                                                                                       o U p p e r Craesteu(r)n  }j)s;o
-                                                                                                                                                                                                                                                                                                                                                                                       n
-                                                                                                                                                                                                                                                                                                                                                                                       ( {   o w}n ecrast:c h{ }(,e rerr)r o{r
-                                                                                                                                                                                                                                                                                                                                                                                       :
-                                                                                                                                                                                                                                                                                                                                                                                         e r r . m ersestaugren  }j)s;o
-                                                                                                                                                                                                                                                                                                                                                                                         n
-                                                                                                                                                                                                                                                                                                                                                                                         ( {   e r}r
-                                                                                                                                                                                                                                                                                                                                                                                         o
-                                                                                                                                                                                                                                                                                                                                                                                         r :  }e
-                                                                                                                                                                                                                                                                                                                                                                                         r
-                                                                                                                                                                                                                                                                                                                                                                                         r . m/e/s s──a gPeO S}T,  /5a0p0i)/;c
-                                                                                                                                                                                                                                                                                                                                                                                         l
-                                                                                                                                                                                                                                                                                                                                                                                         a i m - s}q
-                                                                                                                                                                                                                                                                                                                                                                                         u
-                                                                                                                                                                                                                                                                                                                                                                                         a r e} 
-                                                                                                                                                                                                                                                                                                                                                                                         ──
-                                                                                                                                                                                                                                                                                                                                                                                         ── ── ──/──/── ────── ──P──O──S──T── ──/──a──p
-                                                                                                                                                                                                                                                                                                                                                                                         i
-                                                                                                                                                                                                                                                                                                                                                                                         / l oicfk -(npuamtbhe r=s= =─ ──"──/──a──p──i──/──c──l──a──i──m──-──s──q──u─
-                                                                                                                                                                                                                                                                                                                                                                                         a
-                                                                                                                                                                                                                                                                                                                                                                                         r e "i f& &( pmaetthh o=d= == ="=/ a"pPiO/SlTo"c)k -{n
-                                                                                                                                                                                                                                                                                                                                                                                         u
-                                                                                                                                                                                                                                                                                                                                                                                         m b e r si"f  &(&! tmoektehno)d  r=e=t=u r"nP OjSsTo"n)( {{ 
-                                                                                                                                                                                                                                                                                                                                                                                         e
-                                                                                                                                                                                                                                                                                                                                                                                         r r o r :i f" S(e!rtvoekre nn)o tr ectounrfni gjusroend( {( meirsrsoirn:g  "NSEeTrLvIeFrY _nToOtK EcNo)n"f i}g,u r5e0d0 )(;m
-                                                                                                                                                                                                                                                                                                                                                                                         i
-                                                                                                                                                                                                                                                                                                                                                                                         s s i n gl eNtE TbLoIdFyY;_
-                                                                                                                                                                                                                                                                                                                                                                                         T
-                                                                                                                                                                                                                                                                                                                                                                                         O K E N )t"r y} ,{  5b0o0d)y; 
-                                                                                                                                                                                                                                                                                                                                                                                         =
-                                                                                                                                                                                                                                                                                                                                                                                           a w a ilte tr ebqo.djys;o
-                                                                                                                                                                                                                                                                                                                                                                                           n
-                                                                                                                                                                                                                                                                                                                                                                                           ( ) ;   }t rcya t{c hb o{d yr e=t uarwna ijts orne(q{. jesrorno(r):;  "}I ncvaatlcihd  {J SrOeNt ubrond yj"s o}n,( {4 0e0r)r;o r}:
-                                                                                                                                                                                                                                                                                                                                                                                            
-                                                                                                                                                                                                                                                                                                                                                                                            " I n v acloinds tJ S{O Ng abmoedIyd",  }i,n d4i0c0e)s;,  }i
-                                                                                                                                                                                                                                                                                                                                                                                            n
-                                                                                                                                                                                                                                                                                                                                                                                            i t i a lcso n}s t=  {b ogdaym;e
-                                                                                                                                                                                                                                                                                                                                                                                            I
-                                                                                                                                                                                                                                                                                                                                                                                            d ,   p iinf,  (r!ogwaNmuemIsd,  |c|o l!NAurmrsa y}. i=s Abrordayy;(
-                                                                                                                                                                                                                                                                                                                                                                                            i
-                                                                                                                                                                                                                                                                                                                                                                                            n d i c eisf)  (|!|g a!mienIidt i|a|l s!)p i{n
-                                                                                                                                                                                                                                                                                                                                                                                             
-                                                                                                                                                                                                                                                                                                                                                                                             | |   ! r o wrNeutmusr n| |j s!ocno(l{N uemrsr)o r{:
-                                                                                                                                                                                                                                                                                                                                                                                              
-                                                                                                                                                                                                                                                                                                                                                                                              " M i s s i nrge tguarmne Ijds,o ni(n{d iecrerso,r :o r" Miinsistiinagl sr"e q}u,i r4e0d0 )f;i
-                                                                                                                                                                                                                                                                                                                                                                                              e
-                                                                                                                                                                                                                                                                                                                                                                                              l d s "  }}
-                                                                                                                                                                                                                                                                                                                                                                                              ,
-                                                                                                                                                                                                                                                                                                                                                                                                4 0 0 )i;f
-                                                                                                                                                                                                                                                                                                                                                                                                 
-                                                                                                                                                                                                                                                                                                                                                                                                 ( i n i t}i
-                                                                                                                                                                                                                                                                                                                                                                                                 a
-                                                                                                                                                                                                                                                                                                                                                                                                 l s . l einfg t(hp i<n  2! =|=|  AiDnMiItNi_aPlIsN.)l ernegttuhr n>  j6s)o n{(
-                                                                                                                                                                                                                                                                                                                                                                                                 {
-                                                                                                                                                                                                                                                                                                                                                                                                   e r r o r :r e"tIunrvna ljisdo nP(I{N "e r}r,o r4:0 3")I;n
-                                                                                                                                                                                                                                                                                                                                                                                                   i
-                                                                                                                                                                                                                                                                                                                                                                                                   t i a l si fm u(s!tA rbrea y2.-i6s Acrhraarya(crtoewrNsu"m s}),  |4|0 0r)o;w
-                                                                                                                                                                                                                                                                                                                                                                                                   N
-                                                                                                                                                                                                                                                                                                                                                                                                   u m s . l}e
-                                                                                                                                                                                                                                                                                                                                                                                                   n
-                                                                                                                                                                                                                                                                                                                                                                                                   g t h   !t=r=y  1{0
-                                                                                                                                                                                                                                                                                                                                                                                                    
-                                                                                                                                                                                                                                                                                                                                                                                                    | |   ! A r rcaoyn.sits Adrartaay (=c oalwNauimts )b l|o|b Gceotl(Ntuomkse.nl,e nggatmhe I!d=)=  |1|0 )e m{p
-                                                                                                                                                                                                                                                                                                                                                                                                    t
-                                                                                                                                                                                                                                                                                                                                                                                                    y B o a r d ;r
-                                                                                                                                                                                                                                                                                                                                                                                                    e
-                                                                                                                                                                                                                                                                                                                                                                                                    t u r n   j scoonn(s{t  eorwrnoerr:s  "=r odwaNtuam.so wannedr sc o|l|N u{m}s; 
-                                                                                                                                                                                                                                                                                                                                                                                                    m
-                                                                                                                                                                                                                                                                                                                                                                                                    u s t   e a c/h/  bCeh eacrkr afyosr  ocfo n1f0l"i c}t,s 
-                                                                                                                                                                                                                                                                                                                                                                                                    4
-                                                                                                                                                                                                                                                                                                                                                                                                    0 0 ) ; 
-                                                                                                                                                                                                                                                                                                                                                                                                     
-                                                                                                                                                                                                                                                                                                                                                                                                       c o n s}t
-                                                                                                                                                                                                                                                                                                                                                                                                        
-                                                                                                                                                                                                                                                                                                                                                                                                        c o n f ltircyt s{ 
-                                                                                                                                                                                                                                                                                                                                                                                                        =
-                                                                                                                                                                                                                                                                                                                                                                                                          i n d i c ecso.nfsitl tdeart(ai  == >a woawinte rbsl[oib]G e!t=(=t ouknedne,f ignaemde)I;d
-                                                                                                                                                                                                                                                                                                                                                                                                          )
-                                                                                                                                                                                                                                                                                                                                                                                                            | |   e m pitfy B(ocaorndf;l
-                                                                                                                                                                                                                                                                                                                                                                                                            i
-                                                                                                                                                                                                                                                                                                                                                                                                            c t s . l e ndgattha .>r o0w)N u{m
-                                                                                                                                                                                                                                                                                                                                                                                                            s
-                                                                                                                                                                                                                                                                                                                                                                                                              =   r o w N u mrse;t
-                                                                                                                                                                                                                                                                                                                                                                                                              u
-                                                                                                                                                                                                                                                                                                                                                                                                              r n   j s o nd(a{t ae.rcroolrN:u m`sS q=u acroelsN uamlsr;e
-                                                                                                                                                                                                                                                                                                                                                                    a
-                                                                                                                                                                                                                                                                                                                                                                    d y   t a k edna:t a$.{ncuomnbfelriscLtosc.kjeodi n=( "t,r u"e);}
-                                                                                                      `
-                                                                                                        } ,   4 0 9a)w;a
-                                                                                                        i
-                                                                                                        t   b l o b S}e
-                                                                                                        t
-                                                                                                        ( t o k e n ,/ /g aCmleaIidm,  sdqautaar)e;s
-                                                                                                        
-                                                                                                        
-                                                                                                        
-                                                                                                                    rientduircne sj.sfoonr(E{a cohk(:i  t=r>u e{  }o)w;n
-                                                                                                                    e
-                                                                                                                    r s [ i ]}  =c aitnciht i(aelrsr.)t o{U
-                                                                                                                    p
-                                                                                                                    p e r C a s er(e)t;u r}n) ;j
-                                                                                                                    s
-                                                                                                                    o n ( {   e rdraotra:. oewrnre.rmse s=s aogwen e}r,s ;5
-                                                                                                                    0
-                                                                                                                    0 ) ; 
-                                                                                                                     
-                                                                                                                         a w a}i
-                                                                                                                         t
-                                                                                                                           b l}o
-                                                                                                                           b
-                                                                                                                           S e t/(/t o─k─ ePnO,S Tg a/maepIid/,r edsaetta-)s;q
-                                                                                                                           u
-                                                                                                                           a r e s   ─ ──r──e──t──u──r──n── ──j──s──o──n──(──{── ──o
-                                                                                                                           k
-                                                                                                                           :   tirfu e(,p actlha i=m=e=d :" /ianpdii/creess,e ti-nsiqtuiaarless:"  i&n&i tmieatlhso.dt o=U=p=p e"rPCOaSsTe"())  {}
-                                                                                                                           )
-                                                                                                                           ; 
-                                                                                                                            
-                                                                                                                                i f  }( !ctaotkcehn )( errert)u r{n
-                                                                                                                                 
-                                                                                                                                 j s o n ( {  reertruorrn:  j"sSoenr(v{e re rnrootr :c oenrfri.gmuersesda g(em i}s,s i5n0g0 )N;E
-                                                                                                                                 T
-                                                                                                                                 L I F Y _}T
-                                                                                                                                 O
-                                                                                                                                 K E N})
-                                                                                                                                 "
-                                                                                                                                   } ,/ /5 0─0─ )P;O
-                                                                                                                                   S
-                                                                                                                                   T   / a plie/tl obcokd-yn;u
-                                                                                                                                   m
-                                                                                                                                   b e r s  t─r──y── ──{── ──b──o──d──y── ──=── ──a──w──a──i─
-                                                                                                                                   t
-                                                                                                                                     r eiqf. j(spoant(h) ;= =}=  c"a/tacphi /{l orcekt-unrunm bjesrosn"( {& &e rmreotrh:o d" I=n=v=a l"iPdO SJTS"O)N  {b
-                                                                                                                                     o
-                                                                                                                                     d y "   }i,f  4(0!0t)o;k e}n
-                                                                                                                                     )
-                                                                                                                                       r e t ucronn sjts o{n (g{a meerIrdo,r :p i"nS e}r v=e rb ondoyt; 
-                                                                                                                                       c
-                                                                                                                                       o n f i giufr e(d! g(ammiesIsdi n|g|  N!EpTiLnI)F Yr_eTtOuKrEnN )j"s o}n,( {5 0e0r)r;o
-                                                                                                                                       r
-                                                                                                                                       :   " M ilsesti nbgo dgya;m
-                                                                                                                                       e
-                                                                                                                                       I d   o rt rpyi n{"  b}o,d y4 0=0 )a;w
-                                                                                                                                       a
-                                                                                                                                       i t   r eiqf. j(spoinn( )!;= =}  AcDaMtIcNh_ P{I Nr)e truertnu rjns ojns(o{n (e{r reorrr:o r":I n"vIanlviadl iJdS OPNI Nb"o d}y,"  4}0,3 )4;0
-                                                                                                                                       0
-                                                                                                                                       ) ;   } 
-                                                                                                                                       t
-                                                                                                                                       r y   { 
-                                                                                                                                       c
-                                                                                                                                       o n s t   {  agwaamietI db,l opbiSne,t (rtoowkNeunm,s ,g acmoelINdu,m se m}p t=y Bbooadryd;)
-                                                                                                                                       ;
-                                                                                                                                       
-                                                                                                                                        
-                                                                                                                                              i f   (r!egtaumrenI dj s|o|n (!{p ionk :| |t r!ureo w}N)u;m
-                                                                                                                                              s
-                                                                                                                                                | |   !}c oclaNtucmhs )( e{r
-                                                                                                                                                r
-                                                                                                                                                )   { 
-                                                                                                                                                 
-                                                                                                                                                     r e t u rrne tjusronn (j{s oenr(r{o re:r r"oMri:s seirnrg. mreesqsuaigree d} ,f i5e0l0d)s;"
-                                                                                                                                                      
-                                                                                                                                                      } ,   4 0}0
-                                                                                                                                                      )
-                                                                                                                                                      ; 
-                                                                                                                                                       
-                                                                                                                                                       } 
-                                                                                                                                                        
-                                                                                                                                                            }/
-                                                                                                                                                            /
-                                                                                                                                                              ──   G EiTf  /(appiin/ s!c=o=r eAsD M──I──N──_──P──I──N──)── ──r──e──t──u──r──n── ──j──s──o──n──(
-                                                                                                                                                              {
-                                                                                                                                                                e rirfo r(:m e"tIhnovda l=i=d=  P"IGNE"T "} ,& &4 0p3a)t;h
-                                                                                                                                                                 
-                                                                                                                                                                 = = =   "i/fa p(i!/Asrcroarye.si"s)A r{r
-                                                                                                                                                                 a
-                                                                                                                                                                 y ( r o wcNounmsst)  S|P|O RrToSw N=u m{s
-                                                                                                                                                                 .
-                                                                                                                                                                 l e n g t h  n!c=a=a m1:0  "|h|t t!pAsr:r/a/ys.iitseA.rarpaiy.(ecsoplnN.ucmosm)/ a|p|i sc/osliNtuem/sv.2l/esnpgotrht s!/=b=a s1k0e)t b{a
-                                                                                                                                                                 l
-                                                                                                                                                                 l / m e n s -rceotlulreng ej-sboans(k{e tebrarlolr/:s c"orroewbNouamrsd "a,n
-                                                                                                                                                                 d
-                                                                                                                                                                   c o l N u mnsc amauws:t  "ehatcthp sb:e/ /asrirtaey.sa poif. e1s0p"n .}c,o m4/0a0p)i;s
-                                                                                                                                                                   /
-                                                                                                                                                                   s i t e /}v
-                                                                                                                                                                   2
-                                                                                                                                                                   / s p o rttrsy/ b{a
-                                                                                                                                                                   s
-                                                                                                                                                                   k e t b a l lc/ownosmte ndsa-tcao l=l eagwea-ibta sbkleotbbGaeltl(/tsockoerne,b ogaarmde"I,d
-                                                                                                                                                                   )
-                                                                                                                                                                     | |   e m pntbyaB:o a"rhdt;t
-                                                                                                                                                                     p
-                                                                                                                                                                     s : / / s i tdea.taap.ir.oewsNpunm.sc o=m /raopwiNsu/mssi;t
-                                                                                                                                                                     e
-                                                                                                                                                                     / v 2 / s p odrattsa/.bcaoslkNeutmbsa l=l /cnoblaN/usmcso;r
-                                                                                                                                                                     e
-                                                                                                                                                                     b o a r d " ,d
-                                                                                                                                                                     a
-                                                                                                                                                                     t a . n u m bwenrbsaL:o c"khetdt p=s :t/r/usei;t
-                                                                                                                                                                     e
-                                                                                                                                                                     . a p i . e sapwna.icto mb/laopbiSse/ts(ittoek/evn2,/ sgpaomretIsd/,b adsakteat)b;a
-                                                                                                                                                                     l
-                                                                                                                                                                     l / w n b a /rsectourrenb ojasrodn"(,{
-                                                                                                                                                                      
-                                                                                                                                                                      o k :   t r uneh l}:) ;"
-                                                                                                                                                                      h
-                                                                                                                                                                      t t p s :}/ /csaittceh. a(peir.re)s p{n
-                                                                                                                                                                      .
-                                                                                                                                                                      c o m / a p irse/tsuirtne /jvs2o/ns(p{o retrsr/ohro:c keeryr/.nmhels/ssacgoer e}b,o a5r0d0"),;
-                                                                                                                                                                      
-                                                                                                                                                                      
-                                                                                                                                                                      
-                                                                                                                                                                               } 
-                                                                                                                                                                               m
-                                                                                                                                                                               l b :} 
-                                                                                                                                                                               "
-                                                                                                                                                                               h t t/p/s :─/─ /PsOiStTe ./aappii./ersepsne.tc-osmq/uaapriess/ s─i──t──e──/──v──2──/──s──p──o──r──t──s──/──b──a
-                                                                                                                                                                               s
-                                                                                                                                                                               e b ailfl /(mplabt/hs c=o=r=e b"o/aarpdi"/,r
-                                                                                                                                                                               e
-                                                                                                                                                                               s e t - s q unafrle:s "" h&t&t pmse:t/h/osdi t=e=.=a p"iP.OeSsTp"n). c{o
-                                                                                                                                                                               m
-                                                                                                                                                                               / a p i si/fs i(t!et/ovk2e/ns)p orrettsu/rfno ojtsboanl(l{/ nefrlr/osrc:o r"eSbeoravredr" ,n
-                                                                                                                                                                               o
-                                                                                                                                                                               t   c o n f imglusr:e d" h(tmtipsss:i/n/gs iNtEeT.LaIpFiY._eTsOpKnE.Nc)o"m /}a,p i5s0/0s)i;t
-                                                                                                                                                                               e
-                                                                                                                                                                               / v 2 / slpeotr tbso/dsyo;c
-                                                                                                                                                                               c
-                                                                                                                                                                               e r / u star.y1 /{s cboordeyb o=a radw"a,i
-                                                                                                                                                                               t
-                                                                                                                                                                                 r e q .}j;s
-                                                                                                                                                                                 o
-                                                                                                                                                                                 n ( ) ;  c}o ncsatt cshp o{r tr e=t uurrnl .jsseoanr(c{h Pearrraomrs:. g"eItn(v"aslpiodr tJ"S)O N| |b o"dnyc"a a}m," ;4
-                                                                                                                                                                                 0
-                                                                                                                                                                                 0 ) ;   }c
-                                                                                                                                                                                 o
-                                                                                                                                                                                 n s t   ecsopnnsUtr l{  =g aSmPeOIRdT,S [psipno r}t ]=  |b|o dSyP;O
-                                                                                                                                                                                 R
-                                                                                                                                                                                 T S . n ciafa m(;!
-                                                                                                                                                                                 g
-                                                                                                                                                                                 a m e I dt r|y|  {!
-                                                                                                                                                                                 p
-                                                                                                                                                                                 i n )   r e tcuornns tj sroens( {=  earwraoirt:  f"eMticshs(iensgp ngUarmle)I;d
-                                                                                                                                                                                  
-                                                                                                                                                                                  o r   p i n "c o}n,s t4 0d0a)t;a
-                                                                                                                                                                                   
-                                                                                                                                                                                   =   a w aiift  (rpeisn. j!s=o=n (A)D;M
-                                                                                                                                                                                   I
-                                                                                                                                                                                   N _ P I N )  croentsutr ng ajmseosn (={  (edrartoar.:e v"eInntvsa l|i|d  [P]I)N."m a}p,( e4 0=3>) ;{
-                                                                                                                                                                                   
-                                                                                                                                                                                   
-                                                                                                                                                                                   
-                                                                                                                                                                                           t r y   {c
-                                                                                                                                                                                           o
-                                                                                                                                                                                           n s t   c   =a wea.icto mbpleotbiSteito(ntso?k.e[n0,] ;g
-                                                                                                                                                                                           a
-                                                                                                                                                                                           m e I d ,   e m pctoynBsota rhdo)m;e
-                                                                                                                                                                                            
-                                                                                                                                                                                            =   c ? . c ormepteutrint ojrsso?n.(f{i nodk(:t  t=r>u et .}h)o;m
-                                                                                                                                                                                            e
-                                                                                                                                                                                            A w a y  }= =c=a t"chho m(ee"r)r;)
-                                                                                                                                                                                             
-                                                                                                                                                                                             { 
-                                                                                                                                                                                              
-                                                                                                                                                                                                          croentsutr na wjasyo n=( {c ?e.rcroomrp:e teirtro.rmse?s.sfaigned (}t,  =5>0 0t).;h
-                                                                                                                                                                                                          o
-                                                                                                                                                                                                          m e A w a}y
-                                                                                                                                                                                                           
-                                                                                                                                                                                                           = = =} 
-                                                                                                                                                                                                           "
-                                                                                                                                                                                                           a w a/y/" )──; 
-                                                                                                                                                                                                           G
-                                                                                                                                                                                                           E T   / a p i / sccoonrsets  s── ──=── ──c──?──.──s──t──a──t──u──s──?──.──t──y──p──e──;──
-                                                                                                                                                                                                           
-                                                                                                                                                                                                           
-                                                                                                                                                                                                           
-                                                                                                                                                                                                                i f   ( m ertehtoudr n= ={=
-                                                                                                                                                                                                                 
-                                                                                                                                                                                                                 " G E T "   & &   p aitdh:  =e=.=i d",/ anpaim/es:c oer.ensa"m)e ,{
-                                                                                                                                                                                                                 
-                                                                                                                                                                                                                 
-                                                                                                                                                                                                                 
-                                                                                                                                                                                                                          c o n s t  hSoPmOeR:T Sh o=m e{?
-                                                                                                                                                                                                                          .
-                                                                                                                                                                                                                          t e a m ? . anbcbaraemv:i a"thitotnp,s :h/o/mseiFtuel.la:p ih.oemsep?n..tceoamm/?a.pdiiss/psliatyeN/avm2e/,s phoormtesL/obgaos:k ehtobmael?l./tmeeanms?-.cloolgloe,g eh-obmaesSkceotrbea:l lh/osmceo?r.esbcooarred "|,|
-                                                                                                                                                                                                                           
-                                                                                                                                                                                                                           " 0 " , 
-                                                                                                                                                                                                                            
-                                                                                                                                                                                                                              n c a a w :   " h tatwpasy::/ /aswiatye?..atpeia.me?s.panb.bcroemv/iaaptiiso/ns,i taew/avy2F/uslplo:r tasw/abya?s.kteetabma?l.ld/iwsopmleanysN-acmoel,l eagwea-ybLaosgkoe:t baawlaly/?s.ctoeraemb?o.alrodg"o,,
-                                                                                                                                                                                                                               
-                                                                                                                                                                                                                               a w a y S c onrbea::  a"whatyt?p.ss:c/o/rsei t|e|. a"p0i".,e
-                                                                                                                                                                                                                               s
-                                                                                                                                                                                                                               p n . c o m / a p i ss/tsaittues/:v 2s/?s.pcoormtpsl/ebtaesdk e?t b"aFlIlN/AnLb"a /:s cso?r.eibnoParrodg"r,e
-                                                                                                                                                                                                                               s
-                                                                                                                                                                                                                               s   ?   " L IwVnEb"a ::  ""hStCtHpEsD:U/L/EsDi"t,e
-                                                                                                                                                                                                                               .
-                                                                                                                                                                                                                               a p i . e s p n . c ocml/oacpki:s /cs?i.tset/avt2u/ss?p.odritssp/lbaaysCkleotcbka l|l|/ w"n"b,a /psecroiroedb:o acr?d."s,t
-                                                                                                                                                                                                                               a
-                                                                                                                                                                                                                               t u s ? . p enrhilo:d  "|h|t t0p,s
-                                                                                                                                                                                                                               :
-                                                                                                                                                                                                                               / / s i t e . a p i .teismpen:. ceo.md/aatpei s?/ snietwe /Dva2t/es(peo.rdtast/eh)o.ctkoeLyo/cnahlle/TsicmoerSetbroianrgd("",e
-                                                                                                                                                                                                                               n
-                                                                                                                                                                                                                               - U S " ,   {m lhbo:u r":h t"tnpusm:e/r/isci"t,e .maipniu.tees:p n".2c-odmi/gaipti"s,/ stiitmee/Zvo2n/es:p o"rAtmse/rbiacsae/bNaelwl_/Ymolrbk/"s c}o)r e+b o"a rEdT"", 
-                                                                                                                                                                                                                               :
-                                                                                                                                                                                                                                 " " , 
-                                                                                                                                                                                                                                  
-                                                                                                                                                                                                                                    n f l :   " h t t pdsa:t/e/:s iet.ed.aatpei .?e snpenw. cDoamt/ea(pei.sd/astiet)e./tvo2L/oscpaolretDsa/tfeoSottrbianlgl(/"nefnl-/UsSc"o,r e{b omaorndt"h,:
-                                                                                                                                                                                                                                     
-                                                                                                                                                                                                                                     " l o n g " ,m ldsa:y :" h"tntupmse:r/i/cs"i,t ey.eaapri:. e"snpunm.ecroimc/"a,p itsi/mseiZtoen/ev:2 /"sApmoerrtisc/as/oNcecwe_rY/ourska". 1}/)s c:o r"e"b
-                                                                                                                                                                                                                                     o
-                                                                                                                                                                                                                                     a r d " , 
-                                                                                                                                                                                                                                      
-                                                                                                                                                                                                                                          } ; 
-                                                                                                                                                                                                                                          }
-                                                                                                                                                                                                                                          ; 
-                                                                                                                                                                                                                                           
-                                                                                                                                                                                                                                                   }c)o;n
-                                                                                                                                                                                                                                                   s
-                                                                                                                                                                                                                                                   t   s p o r tr e=t uurrnl .jsseoanr(c{h Psaproarmts,. ggeatm(e"ss,p otrotd"a)y :| |n e"wn cDaaatme"(;)
-                                                                                                                                                                                                                                                   .
-                                                                                                                                                                                                                                                   t o L o ccaolnesDta teesSptnrUirnlg (=" eSnP-OURST"S,[ s{p omrotn]t h|:|  "SlPoOnRgT"S,. ndcaaya:m ;"
-                                                                                                                                                                                                                                                   n
-                                                                                                                                                                                                                                                   u m e r itcr"y,  {y
-                                                                                                                                                                                                                                                   e
-                                                                                                                                                                                                                                                   a r :   " n ucmoenrsitc "r e}s)  =} )a;w
-                                                                                                                                                                                                                                                   a
-                                                                                                                                                                                                                                                   i t   f e}t ccha(tecshp n(Uerrlr)); 
-                                                                                                                                                                                                                                                   {
-                                                                                                                                                                                                                                                   
-                                                                                                                                                                                                                                                    
-                                                                                                                                                                                                                                                              c ornesttu rdna tjas o=n (a{w aeirtr orre:s .ejrsro.nm(e)s;s
-                                                                                                                                                                                                                                                              a
-                                                                                                                                                                                                                                                              g e   } ,   5c0o0n)s;t
-                                                                                                                                                                                                                                                               
-                                                                                                                                                                                                                                                               g a m e s} 
-                                                                                                                                                                                                                                                               =
-                                                                                                                                                                                                                                                                 ( d}a
-                                                                                                                                                                                                                                                                 t
-                                                                                                                                                                                                                                                                 a . e/v/e n─t─ s4 0|4|  f[a]l)l.bmaacpk( e─ ──=──>── ──{──
-                                                                                                                                                                                                                                                                 ──
-                                                                                                                                                                                                                                                                 ── ── ── ── ── ── ── ── ──c──o──n──s──t── ─
-                                                                                                                                                                                                                                                                 c
-                                                                                                                                                                                                                                                                   =  ree.tcuormnp ejtsiotni(o{n se?r.r[o0r]:; 
-                                                                                                                                                                                                                                                                   `
-                                                                                                      N o   h a n d l ecro nfsotr  h$o{mmee t=h ocd?}. c$o{mppaetthi}t`o r}s,? .4f0i4n)d;(
-                                                                                                      t
-                                                                                                       }=;>
-                                                                                                        
-                                                                                                        te.xhpoomretA wcaoyn s=t= =c o"nhfoimge "=) ;{
-                                                                                                        
-                                                                                                        
-                                                                                                        
-                                                                                                             p a t h :  c[o"n/satp ia/wsacyo r=e sc"?,. c"o/mappeit/istqourasr?e.sf"i,n d"(/ta p=i>/ ctl.ahiomm-esAqwuaayr e="=,=  ""/aawpaiy/"l)o;c
-                                                                                                             k
-                                                                                                             - n u m b e r s "c,o n"s/ta psi /=r ecs?e.ts-tsaqtuuasr?e.st"y]p
-                                                                                                             e
-                                                                                                             ;}
-                                                                                                             ;
-                                                                                                                     return {
-                                                                                                                     
-                                                                                                                               id: e.id, name: e.name,
-                                                                                                                               
-                                                                                                                                         home: home?.team?.abbreviation, homeFull: home?.team?.displayName, homeLogo: home?.team?.logo, homeScore: home?.score || "0",
-                                                                                                                                         
-                                                                                                                                                   away: away?.team?.abbreviation, awayFull: away?.team?.displayName, awayLogo: away?.team?.logo, awayScore: away?.score || "0",
-                                                                                                                                                   
-                                                                                                                                                             status: s?.completed ? "FINAL" : s?.inProgress ? "LIVE" : "SCHEDULED",
-                                                                                                                                                             
-                                                                                                                                                                       clock: c?.status?.displayClock || "", period: c?.status?.period || 0,
-                                                                                                                                                                       
-                                                                                                                                                                                 time: e.date ? new Date(e.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }) + " ET" : "",
-                                                                                                                                                                                 
-                                                                                                                                                                                           date: e.date ? new Date(e.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" }) : ""
-                                                                                                                                                                                           
-                                                                                                                                                                                                   };
-                                                                                                                                                                                                   
-                                                                                                                                                                                                         });
-                                                                                                                                                                                                         
-                                                                                                                                                                                                               return json({ sport, games, today: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) });
-                                                                                                                                                                                                               
-                                                                                                                                                                                                                   } catch (err) {
-                                                                                                                                                                                                                   
-                                                                                                                                                                                                                         return json({ error: err.message }, 500);
-                                                                                                                                                                                                                         
-                                                                                                                                                                                                                             }
-                                                                                                                                                                                                                             
-                                                                                                                                                                                                                               }
-                                                                                                                                                                                                                               
-                                                                                                                                                                                                                                 // ── 404 fallback ──────────────────────────────────────────
-                                                                                                                                                                                                                                 
-                                                                                                                                                                                                                                   return json({ error: `No handler for ${method} ${path}` }, 404);
-                                                                                                                                                                                                                                   
-                                                                                                                                                                                                                                   };
-                                                                                                                                                                                                                                   
-                                                                                                                                                                                                                                   export const config = {
-                                                                                                                                                                                                                                   
-                                                                                                                                                                                                                                     path: ["/api/scores", "/api/squares", "/api/claim-square", "/api/lock-numbers", "/api/reset-squares"]
-                                                                                                                                                                                                                                     
-                                                                                                                                                                                                                                     };
+  const url = new URL(req.url);
+  const path = url.pathname;
+  const method = req.method.toUpperCase();
+ 
+  const token = process.env.NETLIFY_TOKEN;
+  const emptyBoard = { owners: {}, rowNums: null, colNums: null, numbersLocked: false };
+ 
+  // ── GET /api/squares ──────────────────────────────────────
+  if (path === "/api/squares" && method === "GET") {
+    const gameId = url.searchParams.get("gameId");
+    if (!gameId) return json({ error: "Missing gameId" }, 400);
+    if (!token) return json(emptyBoard);
+    try {
+      const data = await blobGet(token, gameId) || emptyBoard;
+      return json(data);
+    } catch (err) {
+      return json({ owners: {}, error: err.message });
+    }
+  }
+ 
+  // ── POST /api/claim-square ────────────────────────────────
+  if (path === "/api/claim-square" && method === "POST") {
+    if (!token) return json({ error: "Server not configured (missing NETLIFY_TOKEN)" }, 500);
+    let body;
+    try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+ 
+    const { gameId, indices, initials } = body;
+    if (!gameId || !Array.isArray(indices) || !initials) {
+      return json({ error: "Missing gameId, indices, or initials" }, 400);
+    }
+    if (initials.length < 2 || initials.length > 6) {
+      return json({ error: "Initials must be 2-6 characters" }, 400);
+    }
+ 
+    try {
+      const data = await blobGet(token, gameId) || emptyBoard;
+      const owners = data.owners || {};
+ 
+      // Check for conflicts
+      const conflicts = indices.filter(i => owners[i] !== undefined);
+      if (conflicts.length > 0) {
+        return json({ error: `Squares already taken: ${conflicts.join(", ")}` }, 409);
+      }
+ 
+      // Claim squares
+      indices.forEach(i => { owners[i] = initials.toUpperCase(); });
+      data.owners = owners;
+      await blobSet(token, gameId, data);
+ 
+      return json({ ok: true, claimed: indices, initials: initials.toUpperCase() });
+    } catch (err) {
+      return json({ error: err.message }, 500);
+    }
+  }
+ 
+  // ── POST /api/lock-numbers ────────────────────────────────
+  if (path === "/api/lock-numbers" && method === "POST") {
+    if (!token) return json({ error: "Server not configured (missing NETLIFY_TOKEN)" }, 500);
+    let body;
+    try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+ 
+    const { gameId, pin, rowNums, colNums } = body;
+    if (!gameId || !pin || !rowNums || !colNums) {
+      return json({ error: "Missing required fields" }, 400);
+    }
+    if (pin !== ADMIN_PIN) return json({ error: "Invalid PIN" }, 403);
+    if (!Array.isArray(rowNums) || rowNums.length !== 10 || !Array.isArray(colNums) || colNums.length !== 10) {
+      return json({ error: "rowNums and colNums must each be arrays of 10" }, 400);
+    }
+ 
+    try {
+      const data = await blobGet(token, gameId) || emptyBoard;
+      data.rowNums = rowNums;
+      data.colNums = colNums;
+      data.numbersLocked = true;
+      await blobSet(token, gameId, data);
+      return json({ ok: true });
+    } catch (err) {
+      return json({ error: err.message }, 500);
+    }
+  }
+ 
+  // ── POST /api/reset-squares ───────────────────────────────
+  if (path === "/api/reset-squares" && method === "POST") {
+    if (!token) return json({ error: "Server not configured (missing NETLIFY_TOKEN)" }, 500);
+    let body;
+    try { body = await req.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+ 
+    const { gameId, pin } = body;
+    if (!gameId || !pin) return json({ error: "Missing gameId or pin" }, 400);
+    if (pin !== ADMIN_PIN) return json({ error: "Invalid PIN" }, 403);
+ 
+    try {
+      await blobSet(token, gameId, emptyBoard);
+      return json({ ok: true });
+    } catch (err) {
+      return json({ error: err.message }, 500);
+    }
+  }
+ 
+  // ── GET /api/scores ────────────────────────────────────────
+  if (method === "GET" && path === "/api/scores") {
+    const SPORTS = {
+      ncaam: "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard",
+      ncaaw: "https://site.api.espn.com/apis/site/v2/sports/basketball/womens-college-basketball/scoreboard",
+      nba: "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
+      wnba: "https://site.api.espn.com/apis/site/v2/sports/basketball/wnba/scoreboard",
+      nhl: "https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard",
+      mlb: "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
+      nfl: "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
+      mls: "https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard",
+    };
+    const sport = url.searchParams.get("sport") || "ncaam";
+    const espnUrl = SPORTS[sport] || SPORTS.ncaam;
+    try {
+      const res = await fetch(espnUrl);
+      const data = await res.json();
+      const games = (data.events || []).map(e => {
+        const c = e.competitions?.[0];
+        const home = c?.competitors?.find(t => t.homeAway === "home");
+        const away = c?.competitors?.find(t => t.homeAway === "away");
+        const s = c?.status?.type;
+        return {
+          id: e.id, name: e.name,
+          home: home?.team?.abbreviation, homeFull: home?.team?.displayName, homeLogo: home?.team?.logo, homeScore: home?.score || "0",
+          away: away?.team?.abbreviation, awayFull: away?.team?.displayName, awayLogo: away?.team?.logo, awayScore: away?.score || "0",
+          status: s?.completed ? "FINAL" : s?.inProgress ? "LIVE" : "SCHEDULED",
+          clock: c?.status?.displayClock || "", period: c?.status?.period || 0,
+          time: e.date ? new Date(e.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }) + " ET" : "",
+          date: e.date ? new Date(e.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" }) : ""
+        };
+      });
+      return json({ sport, games, today: new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) });
+    } catch (err) {
+      return json({ error: err.message }, 500);
+    }
+  }
+  // ── 404 fallback ──────────────────────────────────────────
+  return json({ error: `No handler for ${method} ${path}` }, 404);
+};
+ 
+export const config = {
+  path: ["/api/scores", "/api/squares", "/api/claim-square", "/api/lock-numbers", "/api/reset-squares"]
+};
+ 
+  
