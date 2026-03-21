@@ -1,3 +1,4 @@
+ 
 <!DOCTYPE html>
 <!-- v20260316_cleaned -->
 <html lang="en">
@@ -1108,14 +1109,14 @@
             <div class="pay-icon pay-icon-cashapp">$</div>
             <div class="pay-info">
               <div class="pay-name">Cash App</div>
-              <div class="pay-handle">$7707438091</div>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://cash.app/%247707438091" alt="Cash App QR" style="width:70px;height:70px;border-radius:6px;margin-top:4px;display:block;" />
             </div>
           </div>
           <div class="pay-card pay-paypal">
             <div class="pay-icon pay-icon-paypal">P</div>
             <div class="pay-info">
               <div class="pay-name">PayPal</div>
-              <div class="pay-handle" style="font-size:9px;">willie.mayes<br>@gmail.com</div>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://paypal.me/williemayes" alt="PayPal QR" style="width:70px;height:70px;border-radius:6px;margin-top:4px;display:block;" />
             </div>
           </div>
         </div>
@@ -1243,21 +1244,25 @@
       <div class="modal-input-label">Your Initials (3 letters)</div>
       <input type="text" maxlength="3" placeholder="ABC" class="modal-input" id="initialsInput" oninput="checkInitials()" />
       <div class="modal-pay-grid">
-        <div class="modal-pay-option" onclick="selectPay(this)">
+        <div class="modal-pay-option selected" id="payOpt-cashapp" onclick="selectPay(this,'cashapp')">
           <div class="modal-pay-icon" style="background:#00D632;">$</div>
           <div class="modal-pay-name">Cash App</div>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=https://cash.app/%247707438091" alt="QR" style="width:50px;height:50px;border-radius:4px;margin-top:4px;" />
         </div>
-        <div class="modal-pay-option selected" onclick="selectPay(this)">
+        <div class="modal-pay-option" id="payOpt-paypal" onclick="selectPay(this,'paypal')">
           <div class="modal-pay-icon" style="background:#0070ba;font-style:italic;font-size:13px;">P</div>
           <div class="modal-pay-name">PayPal</div>
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=https://paypal.me/williemayes" alt="QR" style="width:50px;height:50px;border-radius:4px;margin-top:4px;" />
         </div>
-        <div class="modal-pay-option" onclick="selectPay(this)">
-          <div class="modal-pay-icon" style="background:#555;">💵</div>
-          <div class="modal-pay-name">Cash</div>
+        <div class="modal-pay-option" id="payOpt-card" onclick="selectPay(this,'card')">
+          <div class="modal-pay-icon" style="background:#6366f1;">💳</div>
+          <div class="modal-pay-name">Card</div>
+          <div style="font-size:9px;color:#aaa;margin-top:4px;">Stripe checkout</div>
         </div>
       </div>
+      <div id="payInstructions" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;margin:10px 0;font-size:12px;color:var(--text2);"></div>
       <button class="modal-cta" id="confirmBtn" disabled onclick="confirmPurchase()">
-        ✓ I've Sent the Payment
+        📲 Reserve My Squares
       </button>
     </div>
   </div>
@@ -1309,7 +1314,13 @@ const SPORT_MAP = {
 
 let currentSport = 'NBA';
 let currentGame = null;
-let currentDate = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+let currentDate = (function() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+})(); // YYYY-MM-DD local time
 let currentQty = 5;
 let currentBoardVersion = null;
 let espnGames = {}; // { sport: [games...] }
@@ -1705,54 +1716,117 @@ function openPayModal() {
   document.getElementById('payModal').classList.add('open');
 }
 
-function selectPay(el) {
+let _selectedPayMethod = 'cashapp';
+
+function selectPay(el, method) {
   document.querySelectorAll('.modal-pay-option').forEach(o => o.classList.remove('selected'));
   el.classList.add('selected');
+  _selectedPayMethod = method || 'cashapp';
+  updatePayInstructions();
+}
+
+function updatePayInstructions() {
+  const el = document.getElementById('payInstructions');
+  if (!el) return;
+  const price = parseFloat(document.getElementById('squarePrice').value) || 10;
+  const qty = currentQty || 5;
+  const total = (qty * price).toFixed(2);
+  if (_selectedPayMethod === 'card') {
+    el.innerHTML = '💳 Pay securely by card via <strong style="color:#818cf8;">Stripe</strong><br><span style="font-size:10px;color:var(--text3);">You will be redirected to checkout — squares locked after payment</span>';
+  } else if (_selectedPayMethod === 'cashapp') {
+    el.innerHTML = '💚 Send <strong style="color:#22c55e;">$' + total + '</strong> to <strong style="color:#22c55e;">$7707438091</strong> on Cash App<br><span style="font-size:10px;color:var(--text3);">Scan QR or tap Pay button — include your initials in the note</span>';
+  } else if (_selectedPayMethod === 'paypal') {
+    el.innerHTML = '💙 Send <strong style="color:#60a5fa;">$' + total + '</strong> to <strong style="color:#60a5fa;">willie.mayes@gmail.com</strong> on PayPal<br><span style="font-size:10px;color:var(--text3);">Friends & Family — include your initials in the note</span>';
+  }
 }
 
 function checkInitials() {
   document.getElementById('confirmBtn').disabled = document.getElementById('initialsInput').value.trim().length < 3;
+  updatePayInstructions();
 }
 
 async function confirmPurchase() {
   const initials = document.getElementById('initialsInput').value.trim().toUpperCase();
+  if (initials.length < 3) { alert('Enter at least 3 initials.'); return; }
   const btn = document.getElementById('confirmBtn');
   btn.disabled = true;
-  btn.textContent = 'Locking in...';
-
   const game = currentGame;
-  const serverData = _cache[game.id] || await fetchSquares(game.id);
-  const serverOwned = new Set(Object.keys(serverData.owners || {}).map(Number));
-  const sold = new Set([...(game.sold || []), ...serverOwned]);
-  const mine = getMySquares(game.id);
-  (game.mine || []).forEach(i => mine.add(i));
-
-  const open = [];
-  for (let i = 0; i < 100; i++) {
-    if (!sold.has(i) && !mine.has(i)) open.push(i);
-  }
-  const shuffled = open.sort(() => Math.random() - 0.5);
-  const toAdd = Math.min(currentQty, shuffled.length);
-  const newIdxs = shuffled.slice(0, toAdd);
-
-  try {
-    await persistSquares(game.id, newIdxs, initials);
-  } catch (e) {
+  if (!game || !game.id) {
     btn.disabled = false;
-    btn.textContent = 'CONFIRM & LOCK IN';
-    alert('Could not claim squares: ' + e.message + '\nTry refreshing and picking again.');
+    alert('No game loaded. Select a sport and game first.'); return;
+  }
+  const price = parseFloat(document.getElementById('squarePrice').value) || 10;
+  const qty = currentQty || 5;
+  const total = (qty * price).toFixed(2);
+
+  // ── Card → Stripe checkout ──────────────────────────────
+  if (_selectedPayMethod === 'card') {
+    btn.textContent = '💳 Opening Checkout...';
+    try {
+      const r = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ gameId: game.id, initials, qty, priceEach: Math.round(price * 100) })
+      });
+      const text = await r.text();
+      let resp = {};
+      try { resp = JSON.parse(text); } catch(_) {}
+      if (resp.url) {
+        window.location.href = resp.url;
+      } else {
+        throw new Error(resp.error || 'Could not create checkout session');
+      }
+    } catch(e) {
+      btn.disabled = false; btn.textContent = '📲 Reserve My Squares';
+      alert('Stripe error: ' + e.message);
+    }
     return;
   }
 
-  document.getElementById('payModal').classList.remove('open');
-  const price = parseFloat(document.getElementById('squarePrice').value) || 10;
-  document.getElementById('confirmMsg').innerHTML =
-    `${toAdd} square${toAdd > 1 ? 's' : ''} × $${price} = <strong style="color:white;">$${(toAdd * price).toFixed(2)}</strong>` +
-    `<br><span style="color:var(--green-light);font-size:13px;margin-top:4px;display:block;">Your squares are locked in as <strong>${initials}</strong> ✓ visible to all players!</span>`;
-  setTimeout(() => {
-    document.getElementById('confirmModal').classList.add('open');
-    buildGrid(game);
-  }, 150);
+  // ── CashApp / PayPal → reserve pending + show pay button ──
+  btn.textContent = '⏳ Reserving...';
+  try {
+    const r = await fetch('/api/auto-assign', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ gameId: game.id, qty, initials, pending: true, payMethod: _selectedPayMethod, amount: total })
+    });
+    const text = await r.text();
+    let data = {};
+    try { data = JSON.parse(text); } catch(_) {}
+    if (!r.ok || !data.ok) throw new Error(data.error || 'Reserve failed');
+
+    localStorage.setItem('my_' + game.id, JSON.stringify(data.indices));
+    localStorage.setItem('initials_' + game.id, initials);
+    _cache[game.id] = null;
+
+    document.getElementById('payModal').classList.remove('open');
+
+    // Build pay button
+    var payBtnHtml = '';
+    if (_selectedPayMethod === 'cashapp') {
+      var caNote = encodeURIComponent('ParlayPro Squares - ' + initials);
+      var caUrl = 'https://cash.app/$7707438091/' + total + '?note=' + caNote;
+      payBtnHtml = '<a href="' + caUrl + '" target="_blank" style="display:inline-block;margin-top:12px;padding:12px 24px;background:#00D632;color:white;font-weight:700;font-size:15px;border-radius:10px;text-decoration:none;">💚 Pay $' + total + ' on Cash App</a>';
+    } else if (_selectedPayMethod === 'paypal') {
+      var ppUrl = 'https://paypal.me/williemayes/' + total + 'USD';
+      payBtnHtml = '<a href="' + ppUrl + '" target="_blank" style="display:inline-block;margin-top:12px;padding:12px 24px;background:#0070ba;color:white;font-weight:700;font-size:15px;border-radius:10px;text-decoration:none;">💙 Pay $' + total + ' on PayPal</a>';
+    }
+
+    document.getElementById('confirmMsg').innerHTML =
+      data.indices.length + ' square' + (data.indices.length > 1 ? 's' : '') + ' x $' + price + ' = <strong style="color:white;">$' + total + '</strong>' +
+      '<br><span style="color:#22c55e;font-size:13px;margin-top:6px;display:block;">Reserved as <strong>' + initials + '</strong></span>' +
+      '<br><span style="color:var(--text3);font-size:11px;">Tap below to complete payment — squares lock automatically</span>' +
+      payBtnHtml;
+
+    setTimeout(() => {
+      document.getElementById('confirmModal').classList.add('open');
+      buildGrid(game);
+    }, 150);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '📲 Reserve My Squares';
+    alert(e.message);
+  }
 }
 
 function closeConfirm() {
@@ -1824,6 +1898,33 @@ async function adminReset() {
 // ── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   logStatus('Page loading...', false);
+
+  // ── Set date immediately ──────────────────────────────────
+  (function() {
+    const d = new Date(currentDate + 'T12:00:00');
+    const el = document.getElementById('live-date');
+    if (el) el.textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  })();
+
+  // ── Handle Stripe redirect callbacks ─────────────────────
+  var _sp = new URLSearchParams(window.location.search);
+  if (_sp.get('payment') === 'success') {
+    window.history.replaceState({}, '', window.location.pathname);
+    var _msg = document.createElement('div');
+    _msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#16a34a;color:white;padding:14px 24px;border-radius:12px;font-weight:700;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
+    _msg.textContent = '✅ Payment received! Your squares are locked in.';
+    document.body.appendChild(_msg);
+    setTimeout(function() { _msg.remove(); }, 5000);
+  }
+  if (_sp.get('payment') === 'cancelled') {
+    window.history.replaceState({}, '', window.location.pathname);
+    var _msg2 = document.createElement('div');
+    _msg2.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:white;padding:14px 24px;border-radius:12px;font-weight:700;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
+    _msg2.textContent = '❌ Payment cancelled — squares not reserved.';
+    document.body.appendChild(_msg2);
+    setTimeout(function() { _msg2.remove(); }, 4000);
+  }
+
   try {
     initDatePicker();
     // Load game FIRST (don't wait for ticker)
