@@ -1,4 +1,3 @@
- 
 <!DOCTYPE html>
 <!-- v20260316_cleaned -->
 <html lang="en">
@@ -985,6 +984,29 @@
         <!-- populated by JS -->
       </div>
     </div>
+
+    <!-- QUARTER TRACKER -->
+    <div id="qtrTracker" style="margin:12px 8px 0;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;display:none;">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;margin-bottom:10px;">QUARTER TRACKER</div>
+      <div style="overflow-x:auto;">
+        <table id="qtrTable" style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead>
+            <tr style="color:var(--text3);font-size:10px;font-weight:700;letter-spacing:.06em;">
+              <td style="padding:4px 6px;">QTR</td>
+              <td style="padding:4px 6px;text-align:center;" id="qtrAwayLabel">AWAY</td>
+              <td style="padding:4px 6px;text-align:center;" id="qtrHomeLabel">HOME</td>
+              <td style="padding:4px 6px;text-align:center;">WINNER</td>
+              <td style="padding:4px 6px;text-align:right;">PAYOUT</td>
+            </tr>
+          </thead>
+          <tbody id="qtrBody">
+            <tr><td colspan="5" style="color:var(--text3);padding:8px 6px;font-size:11px;">Waiting for game to start...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="qtrHouseSummary" style="margin-top:10px;padding:8px;background:rgba(255,255,255,0.04);border-radius:8px;font-size:11px;color:var(--text3);display:none;"></div>
+    </div>
+
   </div>
 
   <!-- SIDEBAR -->
@@ -1336,19 +1358,23 @@ function initDatePicker() {
   const maxDate = new Date(today);
   maxDate.setDate(maxDate.getDate() + 14); // 2 weeks out
   picker.value = currentDate;
-  picker.min = today.toISOString().slice(0, 10);
+  // Allow up to 30 days back so admin can review past boards
+  const minDate = new Date(today);
+  minDate.setDate(minDate.getDate() - 30);
+  picker.min = minDate.toISOString().slice(0, 10);
   picker.max = maxDate.toISOString().slice(0, 10);
 }
 
 function changeDate(offset) {
   const d = new Date(currentDate + 'T12:00:00');
   d.setDate(d.getDate() + offset);
-  const today = new Date();
-  const maxDate = new Date(today);
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() - 30);
+  const maxDate = new Date();
   maxDate.setDate(maxDate.getDate() + 14);
-  today.setHours(0,0,0,0);
+  minDate.setHours(0,0,0,0);
   maxDate.setHours(23,59,59,999);
-  if (d < today || d > maxDate) return;
+  if (d < minDate || d > maxDate) return;
   currentDate = d.toISOString().slice(0, 10);
   document.getElementById('gameDate').value = currentDate;
   updateSport(currentSport);
@@ -1369,18 +1395,63 @@ async function fetchEspnScores(sport) {
     const dateStr = getEspnDateParam();
     logStatus('Fetching ' + sport + ' for ' + currentDate + '...', false);
     const apiSport = SPORT_MAP[sport] || sport.toLowerCase();
-    const res = await fetch(`/api/scores?sport=${encodeURIComponent(apiSport)}&date=${dateStr}`);
-    if (!res.ok) {
-      logStatus('ESPN API error: HTTP ' + res.status + ' for ' + sport, true);
+
+    // Try Netlify function first
+    try {
+      const res = await fetch(`/api/scores?sport=${encodeURIComponent(apiSport)}&date=${dateStr}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.games && data.games.length > 0) {
+          logStatus(sport + ': ' + data.games.length + ' games loaded', false);
+          espnGames[sport] = data.games;
+          return data;
+        }
+      }
+      logStatus('Netlify /api/scores failed (HTTP ' + (res.status || '?') + '), trying ESPN direct...', true);
+    } catch(e1) {
+      logStatus('Netlify function error: ' + e1.message + ', trying ESPN direct...', true);
+    }
+
+    // Fallback: call ESPN API directly from browser
+    const espnLeagueMap = {
+      'nba': 'basketball/nba', 'nhl': 'hockey/nhl', 'mlb': 'baseball/mlb',
+      'nfl': 'football/nfl', 'mls': 'soccer/usa.1', 'wnba': 'basketball/wnba',
+      'ncaam': 'basketball/mens-college-basketball', 'ncaaw': 'basketball/womens-college-basketball'
+    };
+    const league = espnLeagueMap[apiSport] || ('basketball/nba');
+    const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/${league}/scoreboard?dates=${dateStr}`;
+    const espnRes = await fetch(espnUrl);
+    if (!espnRes.ok) {
+      logStatus('ESPN direct API also failed: HTTP ' + espnRes.status, true);
       return null;
     }
-    const data = await res.json();
-    if (data && data.games) {
-      logStatus(sport + ': ' + data.games.length + ' games loaded', false);
-      espnGames[sport] = data.games;
-      return data;
+    const espnData = await espnRes.json();
+    const events = espnData.events || [];
+    const games = events.map(ev => {
+      const comp = ev.competitions && ev.competitions[0];
+      const comps = comp && comp.competitors;
+      const away = comps && comps.find(c => c.homeAway === 'away');
+      const home = comps && comps.find(c => c.homeAway === 'home');
+      const status = ev.status && ev.status.type;
+      const isLive = status && status.state === 'in';
+      const isFinal = status && status.completed;
+      return {
+        id: ev.id,
+        away: (away && away.team && away.team.abbreviation) || 'AWAY',
+        home: (home && home.team && home.team.abbreviation) || 'HOME',
+        awayScore: away && parseInt(away.score) || 0,
+        homeScore: home && parseInt(home.score) || 0,
+        status: isFinal ? 'FINAL' : isLive ? 'LIVE' : 'UPCOMING',
+        time: (status && status.shortDetail) || 'TBD',
+        period: (comp && comp.period) || 0
+      };
+    });
+    if (games.length > 0) {
+      logStatus(sport + ': ' + games.length + ' games (ESPN direct)', false);
+      espnGames[sport] = games;
+      return { games };
     }
-    logStatus('No games data in response for ' + sport, true);
+    logStatus('No games found via ESPN direct for ' + sport, true);
     return null;
   } catch (e) {
     logStatus('ESPN fetch failed for ' + sport + ': ' + e.message, true);
@@ -1509,6 +1580,9 @@ async function buildGrid(game) {
   }
 
   document.getElementById('squaresGrid').innerHTML = html;
+
+  // Update quarter tracker
+  updateQtrTracker(game, serverData).catch(function(){});
 }
 
 // ── ODDS BUILDER ─────────────────────────────────────────────
@@ -1628,12 +1702,36 @@ async function loadGame(game) {
 }
 
 // ── EVENT HANDLERS ───────────────────────────────────────────
+// Fallback dummy game so grid always renders even when ESPN API is down
+function getFallbackGame(sport) {
+  const fallbacks = {
+    'NBA': { id: 'fallback-nba-' + currentDate, away: 'AWAY', home: 'HOME', awayScore: 0, homeScore: 0, status: 'UPCOMING', time: 'TBD', period: 0 },
+    'NHL': { id: 'fallback-nhl-' + currentDate, away: 'AWAY', home: 'HOME', awayScore: 0, homeScore: 0, status: 'UPCOMING', time: 'TBD', period: 0 },
+    'MLB': { id: 'fallback-mlb-' + currentDate, away: 'AWAY', home: 'HOME', awayScore: 0, homeScore: 0, status: 'UPCOMING', time: 'TBD', period: 0 },
+    'NFL': { id: 'fallback-nfl-' + currentDate, away: 'AWAY', home: 'HOME', awayScore: 0, homeScore: 0, status: 'UPCOMING', time: 'TBD', period: 0 },
+  };
+  return fallbacks[sport] || fallbacks['NBA'];
+}
+
 async function updateSport(sport) {
   logStatus('Switching to ' + sport + '...', false);
   currentSport = sport;
+
+  // Show loading state in grid immediately
+  const grid = document.getElementById('squaresGrid');
+  if (grid) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);font-size:13px;">Loading games...</div>';
+  }
+
   const data = await fetchEspnScores(sport);
   if (!data || !data.games || !data.games.length) {
-    logStatus('No games found for ' + sport, true);
+    logStatus('No games found for ' + sport + ' — using fallback board', true);
+    // Still render the grid with a fallback game so board is usable
+    const fallback = getFallbackGame(sport);
+    espnGames[sport] = [fallback];
+    populateGameDropdown(sport);
+    buildGamesList(sport);
+    await loadGame(fallback);
     return;
   }
   populateGameDropdown(sport);
@@ -1778,7 +1876,11 @@ async function confirmPurchase() {
       }
     } catch(e) {
       btn.disabled = false; btn.textContent = '📲 Reserve My Squares';
-      alert('Stripe error: ' + e.message);
+      if (e.message && e.message.includes('fetch')) {
+        alert('Card checkout is not yet available. Please use Cash App or PayPal to pay Willie directly.');
+      } else {
+        alert('Stripe error: ' + e.message);
+      }
     }
     return;
   }
@@ -1896,6 +1998,153 @@ async function adminReset() {
 }
 
 // ── INIT ─────────────────────────────────────────────────────
+// ── INIT ─────────────────────────────────────────────────────
+// ── QUARTER TRACKER ──────────────────────────────────────────
+var _qtrData = {}; // cached period results per gameId
+
+// Returns sport config: { periods, labels, payouts, housecut }
+// housecut: flat % off top for house (only NCAA Men halves = 0.20)
+function getSportConfig(sport) {
+  if (sport === 'MM_MEN') {
+    // 2 halves: H1=40%, H2=40%, house always gets flat 20%
+    return { periods: 2, labels: ['H1','H2'], payouts: [0.40, 0.40], housecut: 0.20 };
+  } else if (sport === 'MLB') {
+    // 9 innings: house always gets 20%, remaining 80% split equally across 9 innings (~8.89% each)
+    const pct = 0.80 / 9;
+    return { periods: 9, labels: ['I1','I2','I3','I4','I5','I6','I7','I8','I9'], payouts: Array(9).fill(pct), housecut: 0.20 };
+  } else {
+    // NBA/NHL/NFL/MLS/WNBA/MM_WOMEN: 4 quarters, 20% each, house always gets 20% flat
+    return { periods: 4, labels: ['Q1','Q2','Q3','Q4'], payouts: [0.20, 0.20, 0.20, 0.20], housecut: 0.20 };
+  }
+}
+
+async function updateQtrTracker(game, squaresData) {
+  if (!game) return;
+  const tracker = document.getElementById('qtrTracker');
+  const body = document.getElementById('qtrBody');
+  const houseSummary = document.getElementById('qtrHouseSummary');
+  if (!tracker || !body) return;
+
+  const owners = squaresData && squaresData.owners ? squaresData.owners : {};
+  const totalSold = Object.keys(owners).length;
+  const price = parseFloat(document.getElementById('squarePrice') && document.getElementById('squarePrice').value) || 10;
+
+  // Hide tracker if no squares sold yet
+  if (totalSold === 0) { tracker.style.display = 'none'; return; }
+  tracker.style.display = 'block';
+
+  // Set team labels
+  const awayEl = document.getElementById('qtrAwayLabel');
+  const homeEl = document.getElementById('qtrHomeLabel');
+  if (awayEl) awayEl.textContent = game.away || 'AWAY';
+  if (homeEl) homeEl.textContent = game.home || 'HOME';
+
+  const pot = totalSold * price;
+  const cfg = getSportConfig(currentSport);
+  const houseFlatAmt = pot * cfg.housecut;
+  const playablePot = pot - houseFlatAmt;
+
+  const period = parseInt(game.period) || 0;
+  const awayScore = parseInt(game.awayScore) || 0;
+  const homeScore = parseInt(game.homeScore) || 0;
+
+  if (!_qtrData[game.id]) _qtrData[game.id] = {};
+  const stored = _qtrData[game.id];
+
+  if ((game.status === 'LIVE' || game.status === 'FINAL') && period >= 1) {
+    if (game.status === 'FINAL') {
+      for (let p = 1; p <= Math.max(cfg.periods, period); p++) {
+        if (!stored['p' + p] && (p === period || p === cfg.periods)) {
+          stored['p' + p] = { away: awayScore, home: homeScore };
+        }
+      }
+    } else {
+      stored['p' + period] = { away: awayScore, home: homeScore };
+    }
+  }
+
+  let houseWinTotal = houseFlatAmt;
+  let houseUnclaimed = [];
+  let rows = '';
+
+  for (let p = 1; p <= cfg.periods; p++) {
+    const snap = stored['p' + p];
+    const isComplete = snap && (game.status === 'FINAL' || period > p);
+    const isCurrent = period === p && game.status === 'LIVE';
+    const periodPayout = playablePot * cfg.payouts[p - 1];
+    const label = cfg.labels[p - 1];
+
+    if (!snap && !isCurrent) {
+      rows += `<tr style="opacity:0.4;">
+        <td style="padding:5px 6px;font-weight:700;color:var(--text2);">${label}</td>
+        <td style="padding:5px 6px;text-align:center;">—</td>
+        <td style="padding:5px 6px;text-align:center;">—</td>
+        <td style="padding:5px 6px;text-align:center;color:var(--text3);">TBD</td>
+        <td style="padding:5px 6px;text-align:right;color:var(--text3);">$${periodPayout.toFixed(2)}</td>
+      </tr>`;
+      continue;
+    }
+
+    const scoreSnap = snap || { away: awayScore, home: homeScore };
+    const awayDig = scoreSnap.away % 10;
+    const homeDig = scoreSnap.home % 10;
+
+    let winner = null;
+    if (squaresData && squaresData.rowNums && squaresData.colNums) {
+      const rowIdx = squaresData.colNums.indexOf(awayDig);
+      const colIdx = squaresData.rowNums.indexOf(homeDig);
+      if (rowIdx !== -1 && colIdx !== -1) {
+        winner = owners[rowIdx * 10 + colIdx] || null;
+      }
+    }
+
+    const winnerDisplay = winner || (isComplete || isCurrent ? 'House' : 'TBD');
+    const winnerColor = winner ? '#22c55e' : (winnerDisplay === 'House' ? '#f59e0b' : 'var(--text3)');
+
+    if ((isComplete || isCurrent) && !winner) {
+      houseWinTotal += periodPayout;
+      houseUnclaimed.push(label);
+    }
+
+    const rowBg = isCurrent ? 'background:rgba(250,204,21,0.06);' : isComplete ? 'background:rgba(34,197,94,0.04);' : '';
+    rows += `<tr style="${rowBg}border-top:1px solid rgba(255,255,255,0.04);">
+      <td style="padding:5px 6px;font-weight:700;color:var(--text2);">${label}${isCurrent ? ' <span style="color:var(--yellow);font-size:9px;">LIVE</span>' : isComplete ? ' <span style="color:#22c55e;font-size:9px;">FINAL</span>' : ''}</td>
+      <td style="padding:5px 6px;text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:700;">${scoreSnap.away}</td>
+      <td style="padding:5px 6px;text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:700;">${scoreSnap.home}</td>
+      <td style="padding:5px 6px;text-align:center;font-weight:700;color:${winnerColor};">${winnerDisplay}</td>
+      <td style="padding:5px 6px;text-align:right;font-weight:700;color:${winner ? '#22c55e' : winnerDisplay === 'House' ? '#f59e0b' : 'var(--text3)'};">$${periodPayout.toFixed(2)}</td>
+    </tr>`;
+  }
+
+  // NCAA Men: always show flat house cut row
+  if (cfg.housecut > 0) {
+    rows += `<tr style="border-top:1px solid rgba(255,255,255,0.06);background:rgba(245,158,11,0.04);">
+      <td colspan="3" style="padding:5px 6px;font-weight:700;color:#f59e0b;font-size:11px;">🏠 HOUSE CUT (20%)</td>
+      <td style="padding:5px 6px;text-align:center;color:#f59e0b;">Always</td>
+      <td style="padding:5px 6px;text-align:right;font-weight:700;color:#f59e0b;">$${houseFlatAmt.toFixed(2)}</td>
+    </tr>`;
+  }
+
+  rows += `<tr style="border-top:2px solid rgba(255,255,255,0.1);">
+    <td colspan="3" style="padding:6px 6px;font-weight:700;color:var(--text2);font-size:11px;">TOTAL POT</td>
+    <td style="padding:6px 6px;text-align:center;font-weight:700;color:var(--text2);">—</td>
+    <td style="padding:6px 6px;text-align:right;font-weight:700;color:white;">$${pot.toFixed(2)}</td>
+  </tr>`;
+
+  body.innerHTML = rows;
+
+  if (houseWinTotal > 0) {
+    houseSummary.style.display = 'block';
+    let msg = '🏠 <strong style="color:#f59e0b;">House</strong> collects <strong style="color:#f59e0b;">$' + houseWinTotal.toFixed(2) + '</strong>';
+    if (cfg.housecut > 0) msg += ' (20% flat cut';
+    if (houseUnclaimed.length > 0) msg += (cfg.housecut > 0 ? ' + ' : ' — ') + houseUnclaimed.join(', ') + ' unclaimed';
+    if (cfg.housecut > 0) msg += ')';
+    houseSummary.innerHTML = msg;
+  } else {
+    houseSummary.style.display = 'none';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   logStatus('Page loading...', false);
 
