@@ -948,10 +948,11 @@
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span id="live-date">Loading...</span>
           </span>
+          <span id="live-game-label" style="font-weight:700;color:var(--text);font-size:13px;margin-left:8px;"></span>
         </div>
       </div>
       <div class="sport-controls">
-        <select class="sport-select" onchange="updateSport(this.value)">
+        <select class="sport-select" id="sportSelect" style="opacity:0.85;pointer-events:none;">
           <option value="NBA">🏀 NBA</option>
           <option value="NHL">🏒 NHL</option>
           <option value="MLB">⚾ MLB</option>
@@ -962,11 +963,9 @@
           <option value="MM_WOMEN">🏀 March Madness (Women)</option>
         </select>
         <div style="display:flex;align-items:center;gap:4px;">
-          <button onclick="changeDate(-1)" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:6px 8px;cursor:pointer;font-size:14px;line-height:1;">◀</button>
-          <input type="date" id="gameDate" class="game-select" onchange="updateDateFromPicker(this.value)" style="min-width:130px;color-scheme:dark;" />
-          <button onclick="changeDate(1)" style="background:var(--surface3);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:6px 8px;cursor:pointer;font-size:14px;line-height:1;">▶</button>
+          <input type="date" id="gameDate" class="game-select" style="min-width:130px;color-scheme:dark;opacity:0.85;pointer-events:none;" />
         </div>
-        <select class="game-select" id="gameSelect" onchange="selectGame(this.value)">
+        <select class="game-select" id="gameSelect" style="opacity:0.85;pointer-events:none;">
           <!-- populated by JS -->
         </select>
       </div>
@@ -987,7 +986,10 @@
 
     <!-- QUARTER TRACKER -->
     <div id="qtrTracker" style="margin:12px 8px 0;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;display:none;">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;margin-bottom:10px;">QUARTER TRACKER</div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+        QUARTER TRACKER
+        <span id="qtrLiveScore" style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--yellow);letter-spacing:0;"></span>
+      </div>
       <div style="overflow-x:auto;">
         <table id="qtrTable" style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead>
@@ -1127,20 +1129,24 @@
         <!-- Pay Willie -->
         <div class="pay-label">Pay Willie</div>
         <div class="pay-grid">
-          <div class="pay-card pay-cashapp">
+          <a href="https://cash.app/$7707438091" target="_blank" style="text-decoration:none;">
+          <div class="pay-card pay-cashapp" style="cursor:pointer;">
             <div class="pay-icon pay-icon-cashapp">$</div>
             <div class="pay-info">
               <div class="pay-name">Cash App</div>
               <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://cash.app/%247707438091" alt="Cash App QR" style="width:70px;height:70px;border-radius:6px;margin-top:4px;display:block;" />
             </div>
           </div>
-          <div class="pay-card pay-paypal">
+          </a>
+          <a href="https://paypal.me/williemayes" target="_blank" style="text-decoration:none;">
+          <div class="pay-card pay-paypal" style="cursor:pointer;">
             <div class="pay-icon pay-icon-paypal">P</div>
             <div class="pay-info">
               <div class="pay-name">PayPal</div>
               <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://paypal.me/williemayes" alt="PayPal QR" style="width:70px;height:70px;border-radius:6px;margin-top:4px;display:block;" />
             </div>
           </div>
+          </a>
         </div>
 
         <!-- CTA -->
@@ -1292,16 +1298,12 @@
 
 <!-- CONFIRM MODAL -->
 <div class="modal-overlay" id="confirmModal">
-  <div class="modal">
+  <div class="modal" style="position:relative;">
+    <button class="modal-close" onclick="closeConfirm()">✕</button>
     <div class="confirm-modal">
       <div class="confirm-icon">✓</div>
       <div class="confirm-title">SQUARES SECURED!</div>
       <div class="confirm-msg" id="confirmMsg">1 square × $10 = <strong style="color:white;">$10.00</strong></div>
-      <div class="confirm-badge">
-        <div class="confirm-badge-text">Your squares are locked in!</div>
-        <div class="confirm-badge-sub">Please pay Willie in cash or via app</div>
-      </div>
-      <button class="confirm-btn" onclick="closeConfirm()">Got it!</button>
     </div>
   </div>
 </div>
@@ -1396,61 +1398,70 @@ async function fetchEspnScores(sport) {
     logStatus('Fetching ' + sport + ' for ' + currentDate + '...', false);
     const apiSport = SPORT_MAP[sport] || sport.toLowerCase();
 
-    // Try Netlify function first
-    try {
-      const res = await fetch(`/api/scores?sport=${encodeURIComponent(apiSport)}&date=${dateStr}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.games && data.games.length > 0) {
-          logStatus(sport + ': ' + data.games.length + ' games loaded', false);
-          espnGames[sport] = data.games;
-          return data;
-        }
-      }
-      logStatus('Netlify /api/scores failed (HTTP ' + (res.status || '?') + '), trying ESPN direct...', true);
-    } catch(e1) {
-      logStatus('Netlify function error: ' + e1.message + ', trying ESPN direct...', true);
-    }
-
-    // Fallback: call ESPN API directly from browser
+    // ESPN direct first — freshest live data, no caching
     const espnLeagueMap = {
       'nba': 'basketball/nba', 'nhl': 'hockey/nhl', 'mlb': 'baseball/mlb',
       'nfl': 'football/nfl', 'mls': 'soccer/usa.1', 'wnba': 'basketball/wnba',
       'ncaam': 'basketball/mens-college-basketball', 'ncaaw': 'basketball/womens-college-basketball'
     };
-    const league = espnLeagueMap[apiSport] || ('basketball/nba');
-    const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/${league}/scoreboard?dates=${dateStr}`;
-    const espnRes = await fetch(espnUrl);
-    if (!espnRes.ok) {
-      logStatus('ESPN direct API also failed: HTTP ' + espnRes.status, true);
-      return null;
+    const league = espnLeagueMap[apiSport] || 'basketball/nba';
+    const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/${league}/scoreboard?dates=${dateStr}&_=${Date.now()}`;
+    try {
+      const espnRes = await fetch(espnUrl);
+      if (espnRes.ok) {
+        const espnData = await espnRes.json();
+        const events = espnData.events || [];
+        const games = events.map(ev => {
+          const comp = ev.competitions && ev.competitions[0];
+          const comps = comp && comp.competitors;
+          const away = comps && comps.find(c => c.homeAway === 'away');
+          const home = comps && comps.find(c => c.homeAway === 'home');
+          const status = ev.status && ev.status.type;
+          const isLive = status && status.state === 'in';
+          const isFinal = status && status.completed;
+          return {
+            id: ev.id,
+            away: (away && away.team && away.team.abbreviation) || 'AWAY',
+            home: (home && home.team && home.team.abbreviation) || 'HOME',
+            awayScore: away && parseInt(away.score) || 0,
+            homeScore: home && parseInt(home.score) || 0,
+            status: isFinal ? 'FINAL' : isLive ? 'LIVE' : 'UPCOMING',
+            time: (ev.status && ev.status.type && ev.status.type.shortDetail) || 'TBD',
+            period: (comp && comp.status && comp.status.period) || 0
+          };
+        });
+        if (games.length > 0) {
+          logStatus(sport + ': ' + games.length + ' games (ESPN live)', false);
+          espnGames[sport] = games;
+          return { games };
+        }
+      }
+    } catch(e1) {
+      logStatus('ESPN direct failed: ' + e1.message + ', trying Netlify...', true);
     }
-    const espnData = await espnRes.json();
-    const events = espnData.events || [];
-    const games = events.map(ev => {
-      const comp = ev.competitions && ev.competitions[0];
-      const comps = comp && comp.competitors;
-      const away = comps && comps.find(c => c.homeAway === 'away');
-      const home = comps && comps.find(c => c.homeAway === 'home');
-      const status = ev.status && ev.status.type;
-      const isLive = status && status.state === 'in';
-      const isFinal = status && status.completed;
-      return {
-        id: ev.id,
-        away: (away && away.team && away.team.abbreviation) || 'AWAY',
-        home: (home && home.team && home.team.abbreviation) || 'HOME',
-        awayScore: away && parseInt(away.score) || 0,
-        homeScore: home && parseInt(home.score) || 0,
-        status: isFinal ? 'FINAL' : isLive ? 'LIVE' : 'UPCOMING',
-        time: (status && status.shortDetail) || 'TBD',
-        period: (comp && comp.period) || 0
-      };
-    });
-    if (games.length > 0) {
-      logStatus(sport + ': ' + games.length + ' games (ESPN direct)', false);
-      espnGames[sport] = games;
-      return { games };
+
+    // Fallback: Netlify function
+    try {
+      const res = await fetch(`/api/scores?sport=${encodeURIComponent(apiSport)}&date=${dateStr}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.games && data.games.length > 0) {
+          logStatus(sport + ': ' + data.games.length + ' games (Netlify)', false);
+          espnGames[sport] = data.games;
+          return data;
+        }
+      }
+    } catch(e2) {
+      logStatus('Netlify fallback failed: ' + e2.message, true);
     }
+
+    logStatus('No games found for ' + sport, true);
+    return null;
+  } catch (e) {
+    logStatus('ESPN fetch failed: ' + e.message, true);
+    return null;
+  }
+}
     logStatus('No games found via ESPN direct for ' + sport, true);
     return null;
   } catch (e) {
@@ -1595,6 +1606,15 @@ function updateBoardHeader(game) {
   if (!game) return;
   const d = new Date(currentDate + 'T12:00:00');
   document.getElementById('live-date').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const gameLabel = document.getElementById('live-game-label');
+  if (gameLabel && game.away && game.home) {
+    const statusBadge = game.status === 'LIVE'
+      ? '<span style="background:var(--red);color:white;font-size:9px;font-weight:800;padding:2px 5px;border-radius:3px;margin-left:6px;animation:pulse 1s infinite;">LIVE</span>'
+      : game.status === 'FINAL'
+      ? '<span style="background:#3f3f3f;color:#aaa;font-size:9px;font-weight:800;padding:2px 5px;border-radius:3px;margin-left:6px;">FINAL</span>'
+      : '';
+    gameLabel.innerHTML = game.away + ' @ ' + game.home + statusBadge;
+  }
 }
 
 // ── SERVER SYNC ──────────────────────────────────────────────
@@ -1713,20 +1733,42 @@ function getFallbackGame(sport) {
   return fallbacks[sport] || fallbacks['NBA'];
 }
 
+// ── AI AGENT: Pick best game to display ──────────────────────
+function pickBestGame(games) {
+  if (!games || !games.length) return null;
+  // Priority: 1) LIVE games, 2) highest scoring, 3) upcoming soonest
+  const live = games.filter(g => g.status === 'LIVE');
+  if (live.length) {
+    // Pick live game with highest combined score (most exciting)
+    return live.sort((a, b) => (parseInt(b.awayScore) + parseInt(b.homeScore)) - (parseInt(a.awayScore) + parseInt(a.homeScore)))[0];
+  }
+  const upcoming = games.filter(g => g.status === 'UPCOMING' || g.status === 'SCHEDULED');
+  if (upcoming.length) return upcoming[0];
+  return games[0];
+}
+
+// ── TOP GAMES FILTER: Only show marquee matchups ──────────────
+function filterTopGames(games) {
+  if (!games || !games.length) return games;
+  // Show live games first, then upcoming — max 6
+  const live = games.filter(g => g.status === 'LIVE');
+  const upcoming = games.filter(g => g.status !== 'LIVE' && g.status !== 'FINAL');
+  const finals = games.filter(g => g.status === 'FINAL').slice(0, 2);
+  return [...live, ...upcoming, ...finals].slice(0, 6);
+}
+
 async function updateSport(sport) {
   logStatus('Switching to ' + sport + '...', false);
   currentSport = sport;
+  // Update the visible selector to show current sport
+  var sportEl = document.getElementById('sportSelect');
+  if (sportEl) sportEl.value = sport;
 
-  // Show loading state in grid immediately
   const grid = document.getElementById('squaresGrid');
-  if (grid) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);font-size:13px;">Loading games...</div>';
-  }
+  if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);font-size:13px;">Loading games...</div>';
 
   const data = await fetchEspnScores(sport);
   if (!data || !data.games || !data.games.length) {
-    logStatus('No games found for ' + sport + ' — using fallback board', true);
-    // Still render the grid with a fallback game so board is usable
     const fallback = getFallbackGame(sport);
     espnGames[sport] = [fallback];
     populateGameDropdown(sport);
@@ -1734,27 +1776,28 @@ async function updateSport(sport) {
     await loadGame(fallback);
     return;
   }
+
+  // Filter to top games only
+  const topGames = filterTopGames(data.games);
+  espnGames[sport] = topGames;
+
   populateGameDropdown(sport);
   buildGamesList(sport);
-  logStatus('Auto-selecting first game: ' + data.games[0].away + ' @ ' + data.games[0].home, false);
-  await loadGame(data.games[0]);
+
+  // AI agent picks best game
+  const bestGame = pickBestGame(topGames);
+  logStatus('Agent selected: ' + bestGame.away + ' @ ' + bestGame.home + ' (' + bestGame.status + ')', false);
+  await loadGame(bestGame);
 }
 
 function selectGame(gameId) {
-  const games = espnGames[currentSport] || [];
-  const game = games.find(g => g.id === gameId);
-  if (game) loadGame(game);
+  // On live board, system controls the game — viewers cannot manually switch
+  return;
 }
 
 function selectGameById(gameId) {
-  for (const sport of Object.keys(espnGames)) {
-    const game = espnGames[sport].find(g => g.id === gameId);
-    if (game) {
-      currentSport = sport;
-      loadGame(game);
-      return;
-    }
-  }
+  // On live board, system controls the game — viewers cannot manually switch
+  return;
 }
 
 function toggleOdds(btn) {
@@ -1907,12 +1950,11 @@ async function confirmPurchase() {
     // Build pay button
     var payBtnHtml = '';
     if (_selectedPayMethod === 'cashapp') {
-      var caNote = encodeURIComponent('ParlayPro Squares - ' + initials);
-      var caUrl = 'https://cash.app/$7707438091/' + total + '?note=' + caNote;
-      payBtnHtml = '<a href="' + caUrl + '" target="_blank" style="display:inline-block;margin-top:12px;padding:12px 24px;background:#00D632;color:white;font-weight:700;font-size:15px;border-radius:10px;text-decoration:none;">💚 Pay $' + total + ' on Cash App</a>';
+      var caUrl = 'https://cash.app/$7707438091';
+      payBtnHtml = '<a href="' + caUrl + '" target="_blank" onclick="setTimeout(function(){document.getElementById(\'confirmModal\').classList.remove(\'open\');},300);" style="display:block;margin-top:16px;padding:16px 24px;background:linear-gradient(135deg,#00D632,#00a828);color:white;font-weight:800;font-size:17px;border-radius:12px;text-decoration:none;text-align:center;box-shadow:0 4px 20px rgba(0,214,50,0.35);">💚 Pay $' + total + ' on Cash App</a>';
     } else if (_selectedPayMethod === 'paypal') {
       var ppUrl = 'https://paypal.me/williemayes/' + total + 'USD';
-      payBtnHtml = '<a href="' + ppUrl + '" target="_blank" style="display:inline-block;margin-top:12px;padding:12px 24px;background:#0070ba;color:white;font-weight:700;font-size:15px;border-radius:10px;text-decoration:none;">💙 Pay $' + total + ' on PayPal</a>';
+      payBtnHtml = '<a href="' + ppUrl + '" target="_blank" onclick="setTimeout(function(){document.getElementById(\'confirmModal\').classList.remove(\'open\');},300);" style="display:block;margin-top:16px;padding:16px 24px;background:linear-gradient(135deg,#0070ba,#003087);color:white;font-weight:800;font-size:17px;border-radius:12px;text-decoration:none;text-align:center;box-shadow:0 4px 20px rgba(0,112,186,0.35);">💙 Pay $' + total + ' on PayPal</a>';
     }
 
     document.getElementById('confirmMsg').innerHTML =
@@ -2029,8 +2071,11 @@ async function updateQtrTracker(game, squaresData) {
   const totalSold = Object.keys(owners).length;
   const price = parseFloat(document.getElementById('squarePrice') && document.getElementById('squarePrice').value) || 10;
 
-  // Hide tracker if no squares sold yet
-  if (totalSold === 0) { tracker.style.display = 'none'; return; }
+  const owners = squaresData && squaresData.owners ? squaresData.owners : {};
+  const totalSold = Object.keys(owners).length;
+  const price = parseFloat(document.getElementById('squarePrice') && document.getElementById('squarePrice').value) || 10;
+
+  // Always show tracker
   tracker.style.display = 'block';
 
   // Set team labels
@@ -2038,6 +2083,27 @@ async function updateQtrTracker(game, squaresData) {
   const homeEl = document.getElementById('qtrHomeLabel');
   if (awayEl) awayEl.textContent = game.away || 'AWAY';
   if (homeEl) homeEl.textContent = game.home || 'HOME';
+
+  // Live score in header
+  const scoreEl = document.getElementById('qtrLiveScore');
+  if (scoreEl) {
+    if (game.status === 'LIVE') {
+      scoreEl.textContent = game.away + ' ' + (game.awayScore||0) + ' — ' + (game.homeScore||0) + ' ' + game.home + ' | Q' + (game.period||'');
+      scoreEl.style.color = 'var(--yellow)';
+    } else if (game.status === 'FINAL') {
+      scoreEl.textContent = game.away + ' ' + (game.awayScore||0) + ' — ' + (game.homeScore||0) + ' ' + game.home + ' | FINAL';
+      scoreEl.style.color = 'var(--text2)';
+    } else {
+      scoreEl.textContent = game.away + ' vs ' + game.home + ' | ' + (game.time || 'Upcoming');
+      scoreEl.style.color = 'var(--text3)';
+    }
+  }
+
+  if (totalSold === 0) {
+    body.innerHTML = '<tr><td colspan="5" style="color:var(--text3);padding:8px 6px;font-size:11px;text-align:center;">No squares sold yet</td></tr>';
+    if (houseSummary) houseSummary.style.display = 'none';
+    return;
+  }
 
   const pot = totalSold * price;
   const cfg = getSportConfig(currentSport);
@@ -2176,8 +2242,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     initDatePicker();
-    // Load game FIRST (don't wait for ticker)
-    await updateSport('NBA');
+    // Scan all sports and pick the best live game automatically
+    logStatus('Agent scanning all sports for live games...', false);
+    const allSports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'NFL', 'MLS', 'WNBA'];
+    let bestGame = null;
+    let bestSport = 'NBA';
+    for (const sport of allSports) {
+      try {
+        const data = await fetchEspnScores(sport);
+        if (data && data.games && data.games.length) {
+          const topGames = filterTopGames(data.games);
+          espnGames[sport] = topGames;
+          const candidate = pickBestGame(topGames);
+          if (candidate) {
+            // Prefer LIVE games above all else
+            if (candidate.status === 'LIVE' && (!bestGame || bestGame.status !== 'LIVE')) {
+              bestGame = candidate;
+              bestSport = sport;
+            } else if (!bestGame) {
+              bestGame = candidate;
+              bestSport = sport;
+            }
+          }
+        }
+      } catch(e) { /* skip failed sport */ }
+    }
+    if (bestGame) {
+      currentSport = bestSport;
+      var sportEl = document.getElementById('sportSelect');
+      if (sportEl) sportEl.value = bestSport;
+      populateGameDropdown(bestSport);
+      buildGamesList(bestSport);
+      logStatus('Agent selected: ' + bestGame.away + ' @ ' + bestGame.home + ' (' + bestSport + ')', false);
+      await loadGame(bestGame);
+    } else {
+      await updateSport('NBA');
+    }
     logStatus('Page ready ✓ | Game: ' + (currentGame ? currentGame.away + ' @ ' + currentGame.home : 'NONE'), !currentGame);
     // Load ticker in background (don't block)
     buildTicker().catch(e => logStatus('Ticker error: ' + e.message, true));
