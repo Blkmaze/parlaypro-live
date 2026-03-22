@@ -2242,34 +2242,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     initDatePicker();
-    // Scan all sports and pick the best live game automatically
+    // Force set date picker value immediately
+    const _picker = document.getElementById('gameDate');
+    if (_picker) _picker.value = currentDate;
+
+    // Show loading state
+    const _grid = document.getElementById('squaresGrid');
+    if (_grid) _grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);font-size:13px;">Agent scanning for live games...</div>';
+
+    // Scan sports in parallel for speed
     logStatus('Agent scanning all sports for live games...', false);
-    const allSports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'NFL', 'MLS', 'WNBA'];
+    const allSports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'MLS', 'WNBA'];
+    const results = await Promise.allSettled(allSports.map(async (sport) => {
+      const data = await fetchEspnScores(sport);
+      if (data && data.games && data.games.length) {
+        const topGames = filterTopGames(data.games);
+        espnGames[sport] = topGames;
+        return { sport, games: topGames, best: pickBestGame(topGames) };
+      }
+      return null;
+    }));
+
+    // Find best game across all sports
     let bestGame = null;
     let bestSport = 'NBA';
-    for (const sport of allSports) {
-      try {
-        const data = await fetchEspnScores(sport);
-        if (data && data.games && data.games.length) {
-          const topGames = filterTopGames(data.games);
-          espnGames[sport] = topGames;
-          const candidate = pickBestGame(topGames);
-          if (candidate) {
-            // Prefer LIVE games above all else
-            if (candidate.status === 'LIVE' && (!bestGame || bestGame.status !== 'LIVE')) {
-              bestGame = candidate;
-              bestSport = sport;
-            } else if (!bestGame) {
-              bestGame = candidate;
-              bestSport = sport;
-            }
-          }
+    for (const r of results) {
+      if (r.status === 'fulfilled' && r.value) {
+        const { sport, best } = r.value;
+        if (best && best.status === 'LIVE' && (!bestGame || bestGame.status !== 'LIVE')) {
+          bestGame = best; bestSport = sport;
+        } else if (best && !bestGame) {
+          bestGame = best; bestSport = sport;
         }
-      } catch(e) { /* skip failed sport */ }
+      }
     }
+
     if (bestGame) {
       currentSport = bestSport;
-      var sportEl = document.getElementById('sportSelect');
+      const sportEl = document.getElementById('sportSelect');
       if (sportEl) sportEl.value = bestSport;
       populateGameDropdown(bestSport);
       buildGamesList(bestSport);
