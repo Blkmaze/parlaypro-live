@@ -146,10 +146,29 @@
     </div>
     <div class="pending-list" id="pendingList">
       <div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No pending payments</div>
+    <!-- PICK'EM ENTRIES -->
+    <div class="section-title" style="margin-top:24px;">
+      ⚡ Pick'em Entries
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm btn-green" onclick="loadPickemEntries()">↻ Refresh</button>
+        <button class="btn-sm btn-blue" onclick="showSettleModal()">🏆 Settle Results</button>
+      </div>
     </div>
 
-  </div>
-</div>
+    <!-- SETTLE MODAL -->
+    <div id="settleModal" style="display:none;background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px;margin-bottom:24px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;">Enter Final Player Stats to Settle All Entries</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Enter actual final stats for each player. System will auto-grade all pending entries.</div>
+      <div id="settlePlayerInputs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;max-height:300px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm btn-green" onclick="settleAllEntries()" style="flex:1;padding:10px;">✅ Settle All Entries</button>
+        <button class="btn-sm btn-red" onclick="document.getElementById('settleModal').style.display='none'">Cancel</button>
+      </div>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:24px;" id="pickemEntriesList">
+      <div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">Click Refresh to load Pick'em entries</div>
+    </div>
 
 <div id="statusBar">Loading...</div>
 
@@ -360,8 +379,129 @@ async function resetBoard(gameId, name) {
 
 async function initAdmin() {
   await agentRescan();
-  // Auto-refresh every 30 seconds
   setInterval(refreshAll, 30000);
+}
+
+// ── PICK'EM ───────────────────────────────────────────────────
+let pickemEntries = [];
+
+async function loadPickemEntries() {
+  const list = document.getElementById('pickemEntriesList');
+  list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);">Loading...</div>';
+  try {
+    const r = await fetch('/api/pickem-entries?pin='+adminPin);
+    const d = await r.json();
+    if (!d.ok) { list.innerHTML='<div style="padding:20px;color:var(--red);">Error: '+(d.error||'Failed')+'</div>'; return; }
+    pickemEntries = d.entries || [];
+    renderPickemEntries();
+    // Build settle modal inputs from unique player names
+    buildSettleInputs();
+  } catch(e) {
+    list.innerHTML = '<div style="padding:20px;color:var(--red);">Network error</div>';
+  }
+}
+
+function renderPickemEntries() {
+  const list = document.getElementById('pickemEntriesList');
+  if (!pickemEntries.length) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">No Pick\'em entries yet</div>';
+    return;
+  }
+  const pending = pickemEntries.filter(e=>e.status==='pending').length;
+  const won = pickemEntries.filter(e=>e.status==='won').length;
+  const lost = pickemEntries.filter(e=>e.status==='lost').length;
+  const totalWon = pickemEntries.filter(e=>e.status==='won').reduce((s,e)=>s+parseFloat(e.winAmount||0),0);
+  const totalCollected = pickemEntries.reduce((s,e)=>s+parseFloat(e.entry||0),0);
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:14px;border-bottom:1px solid var(--border);">
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--yellow);">${pending}</div><div style="font-size:10px;color:var(--text3);">PENDING</div></div>
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--green-light);">${won}</div><div style="font-size:10px;color:var(--text3);">WON</div></div>
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--red);">${lost}</div><div style="font-size:10px;color:var(--text3);">LOST</div></div>
+    <div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:var(--text);">$${totalCollected.toFixed(0)}</div><div style="font-size:10px;color:var(--text3);">COLLECTED</div></div>
+  </div>`;
+
+  pickemEntries.slice(0,30).forEach(e => {
+    const statusColor = e.status==='won'?'var(--green-light)':e.status==='lost'?'var(--red)':'var(--yellow)';
+    const statusLabel = e.status==='won'?'✅ WON $'+e.winAmount:e.status==='lost'?'❌ LOST':'⏳ PENDING';
+    const picks = e.picks || [];
+    html += `<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="font-weight:700;font-size:13px;">${e.initials} — ${e.mode==='power'?'Power':'Flex'} Play · ${picks.length} picks · $${e.entry} entry</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px;">${picks.map(p=>`${p.name} ${p.side==='more'?'⬆':'⬇'} ${p.line} ${p.stat}`).join(' · ')}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:2px;">${e.date||''} · ${e.payMethod||''} · ID: ${e.id}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+        <div style="font-weight:800;font-size:13px;color:${statusColor};">${statusLabel}</div>
+        ${e.status==='pending'?`<button onclick="settleOne('${e.id}')" style="margin-top:4px;background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;cursor:pointer;">Grade</button>`:''}
+      </div>
+    </div>`;
+  });
+
+  list.innerHTML = html;
+}
+
+function buildSettleInputs() {
+  // Collect all unique player names from pending entries
+  const players = new Set();
+  pickemEntries.filter(e=>e.status==='pending').forEach(e=>{
+    (e.picks||[]).forEach(p=>players.add(p.name));
+  });
+  const container = document.getElementById('settlePlayerInputs');
+  if (!players.size) {
+    container.innerHTML = '<div style="color:var(--text3);font-size:12px;">No pending entries to settle</div>';
+    return;
+  }
+  container.innerHTML = [...players].map(name => `
+    <div style="display:flex;align-items:center;gap:8px;">
+      <label style="font-size:12px;color:var(--text2);min-width:160px;">${name}</label>
+      <input type="number" step="0.1" placeholder="Final stat" id="settle_${name.replace(/[^a-z0-9]/gi,'_')}"
+        style="background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:6px 10px;color:var(--text);font-size:13px;width:100px;outline:none;" />
+      <span style="font-size:11px;color:var(--text3);">pts</span>
+    </div>`).join('');
+  window._settlePlayers = [...players];
+}
+
+function showSettleModal() {
+  buildSettleInputs();
+  document.getElementById('settleModal').style.display = 'block';
+}
+
+async function settleAllEntries() {
+  const finalStats = {};
+  (window._settlePlayers||[]).forEach(name => {
+    const el = document.getElementById('settle_'+name.replace(/[^a-z0-9]/gi,'_'));
+    if (el && el.value) finalStats[name] = parseFloat(el.value);
+  });
+  if (!Object.keys(finalStats).length) { alert('Enter at least one player stat'); return; }
+  try {
+    const r = await fetch('/api/pickem-settle-all',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:adminPin,finalStats})});
+    const d = await r.json();
+    if (d.ok) {
+      alert(`Settled ${d.settled} entries. Total won: $${d.totalWon}`);
+      document.getElementById('settleModal').style.display='none';
+      await loadPickemEntries();
+    } else alert('Error: '+(d.error||'Failed'));
+  } catch(e) { alert('Network error'); }
+}
+
+async function settleOne(entryId) {
+  const entry = pickemEntries.find(e=>e.id===entryId);
+  if (!entry) return;
+  const finalStats = {};
+  (entry.picks||[]).forEach(p => {
+    const val = prompt(`Enter final ${p.stat} for ${p.name} (line: ${p.line}):`);
+    if (val !== null) finalStats[p.name] = parseFloat(val);
+  });
+  if (!Object.keys(finalStats).length) return;
+  try {
+    const r = await fetch('/api/pickem-settle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:adminPin,entryId,finalStats})});
+    const d = await r.json();
+    if (d.ok) {
+      const msg = d.status==='won' ? `✅ WON! ${d.correct}/${d.total} correct · ${d.multiplier}× · $${d.winAmount}` : `❌ LOST (${d.correct}/${d.total} correct)`;
+      alert(msg);
+      await loadPickemEntries();
+    } else alert('Error: '+(d.error||'Failed'));
+  } catch(e) { alert('Network error'); }
 }
 </script>
 </body>
