@@ -941,125 +941,11 @@ function filterSport(sport, btn) {
   renderCards();
 }
 
-function updateSportPills() {
-  // Highlight pills that have available props, dim ones that don't
-  const availableSports = new Set(allProps.map(p => p.sport));
-  document.querySelectorAll('.sport-pill').forEach(pill => {
-    const onclick = pill.getAttribute('onclick') || '';
-    const match = onclick.match(/'([^']+)'/);
-    if (match) {
-      const sport = match[1];
-      if (sport === 'ALL') {
-        pill.style.opacity = '1';
-      } else {
-        pill.style.opacity = availableSports.has(sport) ? '1' : '0.35';
-      }
-    }
-  });
-  // Auto-switch to ALL if current filter has no props
-  if (currentSportFilter !== 'ALL') {
-    const hasProps = allProps.some(p => p.sport === currentSportFilter);
-    if (!hasProps) {
-      currentSportFilter = 'ALL';
-      document.querySelectorAll('.sport-pill').forEach(p => p.classList.remove('active'));
-      const allBtn = document.querySelector('.sport-pill');
-      if (allBtn) allBtn.classList.add('active');
-    }
-  }
-}
-
 // ── ESPN FETCH ────────────────────────────────────────────────
-
-// ── PLAYER DATABASE ──────────────────────────────────────────
-// Pre-loaded prop lines — shows immediately when schedule posts, no API needed
-const PLAYER_DB = {
-  'LAL':[{name:'LeBron James',pos:'SF',lines:{pts:24.5,reb:7.5,ast:7.5},color:'552583'},{name:'Anthony Davis',pos:'C',lines:{pts:26.5,reb:12.5,ast:3.5},color:'552583'}],
-  'GSW':[{name:'Steph Curry',pos:'PG',lines:{pts:26.5,reb:4.5,ast:5.5},color:'1D428A'},{name:'Draymond Green',pos:'PF',lines:{pts:9.5,reb:7.5,ast:6.5},color:'1D428A'}],
-  'MIL':[{name:'Giannis Antetokounmpo',pos:'PF',lines:{pts:28.5,reb:11.5,ast:5.5},color:'00471B'},{name:'Damian Lillard',pos:'PG',lines:{pts:23.5,reb:4.5,ast:6.5},color:'00471B'}],
-  'BOS':[{name:'Jayson Tatum',pos:'SF',lines:{pts:27.5,reb:8.5,ast:4.5},color:'007A33'},{name:'Jaylen Brown',pos:'SG',lines:{pts:22.5,reb:5.5,ast:3.5},color:'007A33'}],
-  'DAL':[{name:'Luka Doncic',pos:'PG',lines:{pts:29.5,reb:8.5,ast:8.5},color:'00538C'},{name:'Kyrie Irving',pos:'PG',lines:{pts:23.5,reb:4.5,ast:5.5},color:'00538C'}],
-  'PHX':[{name:'Kevin Durant',pos:'SF',lines:{pts:26.5,reb:6.5,ast:4.5},color:'1D1160'},{name:'Devin Booker',pos:'SG',lines:{pts:25.5,reb:4.5,ast:6.5},color:'1D1160'}],
-  'DEN':[{name:'Nikola Jokic',pos:'C',lines:{pts:26.5,reb:12.5,ast:9.5},color:'0E2240'},{name:'Jamal Murray',pos:'PG',lines:{pts:21.5,reb:4.5,ast:6.5},color:'0E2240'}],
-  'MIN':[{name:'Anthony Edwards',pos:'SG',lines:{pts:25.5,reb:5.5,ast:5.5},color:'0C2340'},{name:'Rudy Gobert',pos:'C',lines:{pts:14.5,reb:12.5,ast:1.5},color:'0C2340'}],
-  'OKC':[{name:'Shai Gilgeous-Alexander',pos:'PG',lines:{pts:30.5,reb:5.5,ast:6.5},color:'007AC1'},{name:'Jalen Williams',pos:'SG',lines:{pts:22.5,reb:4.5,ast:4.5},color:'007AC1'}],
-  'CLE':[{name:'Donovan Mitchell',pos:'SG',lines:{pts:26.5,reb:5.5,ast:5.5},color:'860038'},{name:'Darius Garland',pos:'PG',lines:{pts:19.5,reb:3.5,ast:6.5},color:'860038'}],
-  'NYK':[{name:'Jalen Brunson',pos:'PG',lines:{pts:28.5,reb:3.5,ast:6.5},color:'006BB6'},{name:'Karl-Anthony Towns',pos:'C',lines:{pts:24.5,reb:13.5,ast:3.5},color:'006BB6'}],
-  'IND':[{name:'Tyrese Haliburton',pos:'PG',lines:{pts:20.5,reb:4.5,ast:10.5},color:'002D62'},{name:'Pascal Siakam',pos:'PF',lines:{pts:21.5,reb:7.5,ast:3.5},color:'002D62'}],
-  'MIA':[{name:'Bam Adebayo',pos:'C',lines:{pts:19.5,reb:10.5,ast:3.5},color:'98002E'},{name:'Tyler Herro',pos:'SG',lines:{pts:20.5,reb:5.5,ast:4.5},color:'98002E'}],
-  'ORL':[{name:'Paolo Banchero',pos:'PF',lines:{pts:22.5,reb:6.5,ast:5.5},color:'0077C0'},{name:'Franz Wagner',pos:'SF',lines:{pts:19.5,reb:5.5,ast:3.5},color:'0077C0'}],
-  'ATL':[{name:'Trae Young',pos:'PG',lines:{pts:23.5,reb:3.5,ast:10.5},color:'E03A3E'},{name:'Dejounte Murray',pos:'PG',lines:{pts:20.5,reb:5.5,ast:5.5},color:'E03A3E'}],
-  'CHI':[{name:'Zach LaVine',pos:'SG',lines:{pts:23.5,reb:4.5,ast:4.5},color:'CE1141'},{name:'DeMar DeRozan',pos:'SF',lines:{pts:22.5,reb:4.5,ast:5.5},color:'CE1141'}],
-  'TOR':[{name:'Scottie Barnes',pos:'PF',lines:{pts:19.5,reb:8.5,ast:6.5},color:'CE1141'},{name:'RJ Barrett',pos:'SG',lines:{pts:21.5,reb:6.5,ast:3.5},color:'CE1141'}],
-  'DET':[{name:'Cade Cunningham',pos:'PG',lines:{pts:22.5,reb:4.5,ast:7.5},color:'C8102E'},{name:'Jalen Duren',pos:'C',lines:{pts:12.5,reb:11.5,ast:2.5},color:'C8102E'}],
-  'CHA':[{name:'LaMelo Ball',pos:'PG',lines:{pts:23.5,reb:5.5,ast:8.5},color:'1D1160'},{name:'Brandon Miller',pos:'SF',lines:{pts:17.5,reb:4.5,ast:2.5},color:'1D1160'}],
-  'SAS':[{name:'Victor Wembanyama',pos:'C',lines:{pts:21.5,reb:10.5,ast:3.5},color:'C4CED4'},{name:'Devin Vassell',pos:'SG',lines:{pts:18.5,reb:3.5,ast:3.5},color:'C4CED4'}],
-  'HOU':[{name:'Alperen Sengun',pos:'C',lines:{pts:21.5,reb:9.5,ast:5.5},color:'CE1141'},{name:'Jalen Green',pos:'SG',lines:{pts:22.5,reb:4.5,ast:3.5},color:'CE1141'}],
-  'MEM':[{name:'Ja Morant',pos:'PG',lines:{pts:25.5,reb:5.5,ast:8.5},color:'5D76A9'},{name:'Jaren Jackson Jr.',pos:'C',lines:{pts:22.5,reb:5.5,ast:2.5},color:'5D76A9'}],
-  'NOP':[{name:'Zion Williamson',pos:'PF',lines:{pts:23.5,reb:5.5,ast:4.5},color:'0C2340'},{name:'Brandon Ingram',pos:'SF',lines:{pts:22.5,reb:5.5,ast:5.5},color:'0C2340'}],
-  'POR':[{name:'Anfernee Simons',pos:'SG',lines:{pts:20.5,reb:3.5,ast:5.5},color:'E03A3E'},{name:'Jerami Grant',pos:'SF',lines:{pts:19.5,reb:4.5,ast:2.5},color:'E03A3E'}],
-  'UTA':[{name:'Lauri Markkanen',pos:'PF',lines:{pts:23.5,reb:8.5,ast:1.5},color:'002B5C'},{name:'Jordan Clarkson',pos:'PG',lines:{pts:18.5,reb:3.5,ast:4.5},color:'002B5C'}],
-  'SAC':[{name:"De'Aaron Fox",pos:'PG',lines:{pts:25.5,reb:4.5,ast:6.5},color:'5A2D81'},{name:'Domantas Sabonis',pos:'C',lines:{pts:19.5,reb:13.5,ast:7.5},color:'5A2D81'}],
-  'LAC':[{name:'Kawhi Leonard',pos:'SF',lines:{pts:23.5,reb:6.5,ast:3.5},color:'C8102E'},{name:'James Harden',pos:'PG',lines:{pts:16.5,reb:5.5,ast:8.5},color:'C8102E'}],
-  'PHI':[{name:'Joel Embiid',pos:'C',lines:{pts:34.5,reb:11.5,ast:5.5},color:'006BB6'},{name:'Tyrese Maxey',pos:'PG',lines:{pts:25.5,reb:3.5,ast:6.5},color:'006BB6'}],
-  'BKN':[{name:'Mikal Bridges',pos:'SF',lines:{pts:19.5,reb:4.5,ast:3.5},color:'000000'},{name:'Cam Thomas',pos:'SG',lines:{pts:22.5,reb:4.5,ast:3.5},color:'000000'}],
-  'WAS':[{name:'Kyle Kuzma',pos:'PF',lines:{pts:22.5,reb:7.5,ast:3.5},color:'002B5C'},{name:'Jordan Poole',pos:'PG',lines:{pts:17.5,reb:3.5,ast:5.5},color:'002B5C'}],
-  'GS':[{name:'Steph Curry',pos:'PG',lines:{pts:26.5,reb:4.5,ast:5.5},color:'1D428A'},{name:'Klay Thompson',pos:'SG',lines:{pts:16.5,reb:3.5,ast:2.5},color:'1D428A'}],
-  // NHL — pts=goals, reb=assists, ast=shots
-  'EDM':[{name:'Connor McDavid',pos:'C',lines:{pts:1.5,reb:1.5,ast:4.5},color:'041E42'},{name:'Leon Draisaitl',pos:'C',lines:{pts:1.5,reb:1.5,ast:4.5},color:'041E42'}],
-  'COL':[{name:'Nathan MacKinnon',pos:'C',lines:{pts:1.5,reb:1.5,ast:4.5},color:'6F263D'},{name:'Mikko Rantanen',pos:'RW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'6F263D'}],
-  'VGK':[{name:'Mark Stone',pos:'RW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'B4975A'},{name:'Jack Eichel',pos:'C',lines:{pts:1.5,reb:1.5,ast:3.5},color:'B4975A'}],
-  'NYR':[{name:'Artemi Panarin',pos:'LW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'0038A8'},{name:'Adam Fox',pos:'D',lines:{pts:0.5,reb:1.5,ast:3.5},color:'0038A8'}],
-  'FLA':[{name:'Aleksander Barkov',pos:'C',lines:{pts:1.5,reb:1.5,ast:3.5},color:'C8102E'},{name:'Matthew Tkachuk',pos:'LW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'C8102E'}],
-  'CAR':[{name:'Sebastian Aho',pos:'C',lines:{pts:1.5,reb:1.5,ast:3.5},color:'CC0000'},{name:'Andrei Svechnikov',pos:'RW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'CC0000'}],
-  // MLB — pts=hits, reb=RBI, ast=runs
-  'NYY':[{name:'Aaron Judge',pos:'RF',lines:{pts:1.5,reb:1.5,ast:1.5},color:'003087'},{name:'Juan Soto',pos:'RF',lines:{pts:1.5,reb:1.5,ast:1.5},color:'003087'}],
-  'LAD':[{name:'Shohei Ohtani',pos:'DH',lines:{pts:1.5,reb:1.5,ast:1.5},color:'005A9C'},{name:'Freddie Freeman',pos:'1B',lines:{pts:1.5,reb:1.5,ast:1.5},color:'005A9C'}],
-  'ATL':[{name:'Ronald Acuna Jr.',pos:'RF',lines:{pts:1.5,reb:1.5,ast:1.5},color:'CE1141'},{name:'Matt Olson',pos:'1B',lines:{pts:1.5,reb:1.5,ast:1.5},color:'CE1141'}],
-  'HOU':[{name:'Jose Altuve',pos:'2B',lines:{pts:1.5,reb:1.5,ast:1.5},color:'002D62'},{name:'Yordan Alvarez',pos:'LF',lines:{pts:1.5,reb:1.5,ast:1.5},color:'002D62'}],
-  // March Madness — use team abbr from ESPN
-  'UNC':[{name:'Armando Bacot',pos:'C',lines:{pts:14.5,reb:9.5,ast:1.5},color:'4B9CD3'},{name:'RJ Davis',pos:'PG',lines:{pts:18.5,reb:3.5,ast:3.5},color:'4B9CD3'}],
-  'KAN':[{name:'Hunter Dickinson',pos:'C',lines:{pts:16.5,reb:10.5,ast:2.5},color:'0051A5'},{name:'Kevin McCullar',pos:'SF',lines:{pts:13.5,reb:5.5,ast:3.5},color:'0051A5'}],
-  'UK':[{name:'Oscar Tshiebwe',pos:'C',lines:{pts:16.5,reb:13.5,ast:1.5},color:'0033A0'},{name:'Cason Wallace',pos:'PG',lines:{pts:13.5,reb:4.5,ast:3.5},color:'0033A0'}],
-  'ALA':[{name:'Mark Sears',pos:'PG',lines:{pts:21.5,reb:4.5,ast:4.5},color:'9E1B32'},{name:'Jarin Stevenson',pos:'PF',lines:{pts:14.5,reb:7.5,ast:1.5},color:'9E1B32'}],
-  'IOWA':[{name:'Caitlin Clark',pos:'PG',lines:{pts:28.5,reb:7.5,ast:8.5},color:'FFCD00'},{name:'Kate Martin',pos:'G',lines:{pts:9.5,reb:5.5,ast:3.5},color:'FFCD00'}],
-  'SC':[{name:'Paige Bueckers',pos:'PG',lines:{pts:21.5,reb:5.5,ast:5.5},color:'73000A'},{name:'Ice Brady',pos:'G',lines:{pts:14.5,reb:4.5,ast:2.5},color:'73000A'}],
-  'CONN':[{name:'Paige Bueckers',pos:'PG',lines:{pts:22.5,reb:5.5,ast:5.5},color:'000E2F'},{name:'Aubrey Griffin',pos:'F',lines:{pts:10.5,reb:6.5,ast:1.5},color:'000E2F'}],
-  'LSU':[{name:'Angel Reese',pos:'C',lines:{pts:16.5,reb:13.5,ast:1.5},color:'461D7C'},{name:'Flaujae Johnson',pos:'G',lines:{pts:16.5,reb:6.5,ast:2.5},color:'461D7C'}],
-  'LOU':[{name:'Hailey Van Lith',pos:'G',lines:{pts:16.5,reb:4.5,ast:3.5},color:'AD0000'},{name:'Elizabeth Dixon',pos:'F',lines:{pts:12.5,reb:7.5,ast:1.5},color:'AD0000'}],
-  'ND':[{name:'Olivia Miles',pos:'PG',lines:{pts:15.5,reb:5.5,ast:7.5},color:'0C2340'},{name:'Sonia Citron',pos:'G',lines:{pts:14.5,reb:4.5,ast:2.5},color:'0C2340'}],
-  'OSU':[{name:'Taylor Mikesell',pos:'G',lines:{pts:14.5,reb:3.5,ast:2.5},color:'BB0000'},{name:'Rebeka Mikulasikova',pos:'G',lines:{pts:12.5,reb:4.5,ast:2.5},color:'BB0000'}],
-  'UVA':[{name:'Kaydan Lawson',pos:'G',lines:{pts:12.5,reb:3.5,ast:3.5},color:'232D4B'},{name:'Camryn Taylor',pos:'F',lines:{pts:10.5,reb:6.5,ast:1.5},color:'232D4B'}],
-  'WVU':[{name:'JJ Quinerly',pos:'G',lines:{pts:14.5,reb:3.5,ast:4.5},color:'002855'},{name:'Quinn Slazinski',pos:'F',lines:{pts:10.5,reb:5.5,ast:1.5},color:'002855'}],
-};
-
-function getPlayersFromDB(teamAbbr, sport, gameId, gameName, isLive, gameStatus, gameTime) {
-  // Try exact match first, then uppercase
-  const key = teamAbbr || '';
-  const players = PLAYER_DB[key] || PLAYER_DB[key.toUpperCase()] || [];
-  return players.map((p, i) => ({
-    id: p.name.replace(/\s+/g, '_') + '_' + gameId,
-    name: p.name,
-    shortName: p.name.split(' ').pop(),
-    team: teamAbbr,
-    pos: p.pos,
-    sport,
-    gameId,
-    gameName,
-    isLive,
-    gameStatus,
-    gameTime,
-    currentStats: {pts:0, reb:0, ast:0},
-    activeStat: 'pts',
-    lines: p.lines,
-    teamColor: p.color
-  }));
-}
-
-async function fetchGamesForSport(sport, dateStr) {
+async function fetchGamesForSport(sport) {
   try {
     const now = new Date();
-    const defaultDate = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
-    dateStr = dateStr || defaultDate;
+    const dateStr = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
     const apiSport = SPORT_MAP[sport] || sport.toLowerCase();
     const leagueMap = {'nba':'basketball/nba','nhl':'hockey/nhl','mlb':'baseball/mlb','nfl':'football/nfl','mls':'soccer/usa.1','wnba':'basketball/wnba','ncaam':'basketball/mens-college-basketball','ncaaw':'basketball/womens-college-basketball'};
     const league = leagueMap[apiSport] || 'basketball/nba';
@@ -1143,130 +1029,72 @@ async function fetchPlayerStats(gameId, sport) {
 }
 
 // Generate realistic prop lines for upcoming games using team rosters
-// Season averages cache
-const _seasonAvgCache = {};
-
-async function fetchPlayerSeasonAvg(playerId, sport) {
-  if (_seasonAvgCache[playerId]) return _seasonAvgCache[playerId];
-  try {
-    const leagueMap = {
-      'NBA':'basketball/nba','NHL':'hockey/nhl','MLB':'baseball/mlb',
-      'NFL':'football/nfl','MLS':'soccer/usa.1','WNBA':'basketball/wnba',
-      'MM_MEN':'basketball/mens-college-basketball','MM_WOMEN':'basketball/womens-college-basketball'
-    };
-    const league = leagueMap[sport] || 'basketball/nba';
-    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${league}/athletes/${playerId}/statistics?_=${Date.now()}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    // Try to extract season averages
-    const splits = data.splits && data.splits.categories;
-    if (!splits) return null;
-    const avg = {};
-    splits.forEach(cat => {
-      (cat.stats || []).forEach(s => {
-        if (s.name === 'avgPoints' || s.name === 'points') avg.pts = parseFloat(s.value) || 0;
-        if (s.name === 'avgRebounds' || s.name === 'rebounds') avg.reb = parseFloat(s.value) || 0;
-        if (s.name === 'avgAssists' || s.name === 'assists') avg.ast = parseFloat(s.value) || 0;
-      });
-    });
-    if (avg.pts !== undefined) {
-      _seasonAvgCache[playerId] = avg;
-      return avg;
-    }
-    return null;
-  } catch(e) { return null; }
-}
-
-function buildPropLines(avgPts, avgReb, avgAst) {
-  // Set line at season avg rounded to nearest 0.5
-  const line = (val, min) => {
-    const base = Math.max(val || min, min);
-    return Math.round(base * 2) / 2; // round to nearest 0.5
-  };
-  return {
-    pts: line(avgPts, 8),
-    reb: line(avgReb, 3),
-    ast: line(avgAst, 2)
-  };
-}
-
-async function fetchRosterForTeam(teamAbbr, sport) {
-  try {
-    const leagueMap = {
-      'NBA':'basketball/nba','NHL':'hockey/nhl','MLB':'baseball/mlb',
-      'NFL':'football/nfl','MLS':'soccer/usa.1','WNBA':'basketball/wnba',
-      'MM_MEN':'basketball/mens-college-basketball','MM_WOMEN':'basketball/womens-college-basketball'
-    };
-    const league = leagueMap[sport] || 'basketball/nba';
-    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${league}/teams/${teamAbbr}/roster?_=${Date.now()}`);
-    if (!res.ok) return [];
-    const data = await res.json();
-    const athletes = data.athletes || [];
-    let players = [];
-    athletes.forEach(group => {
-      const items = group.items || group.athletes || [];
-      items.forEach(a => players.push(a));
-    });
-    // Get top 3 players with season averages
-    const topPlayers = players.slice(0, 6);
-    const withStats = await Promise.all(topPlayers.map(async a => {
-      const playerId = a.id;
-      const avg = await fetchPlayerSeasonAvg(playerId, sport);
-      return {
-        id: playerId || a.displayName,
-        name: a.displayName || a.fullName,
-        shortName: a.lastName || (a.displayName||'').split(' ').pop(),
-        pos: (a.position && a.position.abbreviation) || '',
-        teamColor: (data.team && data.team.color) || '1d2640',
-        avgPts: avg && avg.pts || 0,
-        lines: buildPropLines(avg && avg.pts, avg && avg.reb, avg && avg.ast)
-      };
-    }));
-    // Sort by scoring avg descending, return top 3
-    return withStats.sort((a,b) => b.avgPts - a.avgPts).slice(0, 3);
-  } catch(e) { return []; }
-}
-
-async function generatePropsForUpcoming(game, sport) {
-  // First try player database (instant, no API needed)
-  const dbAway = getPlayersFromDB(game.away, sport, game.id, game.away+' @ '+game.home, game.status==='LIVE', game.status, game.time);
-  const dbHome = getPlayersFromDB(game.home, sport, game.id, game.away+' @ '+game.home, game.status==='LIVE', game.status, game.time);
-  if (dbAway.length || dbHome.length) {
-    return [...dbAway.slice(0,2), ...dbHome.slice(0,2)];
-  }
-  // Fall back to roster API
-  const [awayPlayers, homePlayers] = await Promise.all([
-    fetchRosterForTeam(game.away, sport),
-    fetchRosterForTeam(game.home, sport)
-  ]);
-
-  const allPlayers = [...awayPlayers.slice(0,2), ...homePlayers.slice(0,2)];
-
-  if (allPlayers.length) {
-    return allPlayers.map((p, i) => {
-      const isHome = i >= awayPlayers.slice(0,2).length;
-      const team = isHome ? game.home : game.away;
-      return {
-        ...p,
-        team,
-        sport,
-        gameId: game.id,
-        gameName: game.away + ' @ ' + game.home,
-        isLive: false,
-        currentStats: {pts:0,reb:0,ast:0},
-        activeStat: 'pts',
-        lines: { pts: 15.5, reb: 4.5, ast: 3.5 }
-      };
-    });
-  }
-
-  // Last resort: generic placeholders using actual team abbrs
-  return [
-    {id:'p1-'+game.id, name:game.away+' Player 1', shortName:'P1', team:game.away, pos:'G', sport, gameId:game.id, gameName:game.away+' @ '+game.home, isLive:false, currentStats:{pts:0,reb:0,ast:0}, activeStat:'pts', lines:{pts:15.5,reb:4.5,ast:3.5}, teamColor:'1d3d6b'},
-    {id:'p2-'+game.id, name:game.away+' Player 2', shortName:'P2', team:game.away, pos:'F', sport, gameId:game.id, gameName:game.away+' @ '+game.home, isLive:false, currentStats:{pts:0,reb:0,ast:0}, activeStat:'pts', lines:{pts:12.5,reb:6.5,ast:2.5}, teamColor:'1d3d6b'},
-    {id:'p3-'+game.id, name:game.home+' Player 1', shortName:'P3', team:game.home, pos:'G', sport, gameId:game.id, gameName:game.away+' @ '+game.home, isLive:false, currentStats:{pts:0,reb:0,ast:0}, activeStat:'pts', lines:{pts:15.5,reb:4.5,ast:3.5}, teamColor:'1d6b35'},
-    {id:'p4-'+game.id, name:game.home+' Player 2', shortName:'P4', team:game.home, pos:'F', sport, gameId:game.id, gameName:game.away+' @ '+game.home, isLive:false, currentStats:{pts:0,reb:0,ast:0}, activeStat:'pts', lines:{pts:12.5,reb:6.5,ast:2.5}, teamColor:'1d6b35'},
+function generatePropsForUpcoming(game, sport) {
+  // Realistic prop lines by sport and position
+  const nbaLines = [
+    {name:'LeBron James',team:game.home,pos:'SF',lines:{pts:24.5,reb:7.5,ast:7.5}},
+    {name:'Steph Curry',team:game.away,pos:'PG',lines:{pts:26.5,reb:4.5,ast:5.5}},
+    {name:'Giannis A.',team:game.home,pos:'PF',lines:{pts:28.5,reb:11.5,ast:5.5}},
+    {name:'Luka Doncic',team:game.away,pos:'PG',lines:{pts:29.5,reb:8.5,ast:8.5}},
   ];
+  // Use generic placeholders if we don't have real data
+  return nbaLines.slice(0,4).map((p,i) => ({
+    ...p, id: p.name+game.id, sport, gameId: game.id, gameName: game.away+' @ '+game.home,
+    isLive: false, currentStats: {pts:0,reb:0,ast:0}, activeStat: 'pts',
+    teamColor: i%2===0?'1d6b35':'1a3d6b'
+  }));
+}
+
+// ── MAIN AGENT SCAN ───────────────────────────────────────────
+async function loadAllProps() {
+  logStatus('Agent scanning for live player props...');
+  const sports = ['NBA','NHL','MLB','MM_MEN','MM_WOMEN','MLS'];
+  allProps = [];
+
+  const gameResults = await Promise.allSettled(sports.map(s => fetchGamesForSport(s)));
+  const liveGames = [];
+  gameResults.forEach((r,i) => {
+    if (r.status==='fulfilled') {
+      r.value.filter(g=>g.status==='LIVE'||g.status==='UPCOMING').slice(0,2).forEach(g=>{
+        g.sport = sports[i];
+        liveGames.push(g);
+      });
+    }
+  });
+
+  // Fetch player stats for live games (parallel)
+  const propResults = await Promise.allSettled(
+    liveGames.slice(0,6).map(async game => {
+      let players = [];
+      if (game.status === 'LIVE') {
+        players = await fetchPlayerStats(game.id, game.sport);
+      }
+      if (!players.length) {
+        players = generatePropsForUpcoming(game, game.sport);
+      }
+      players.forEach(p => {
+        p.gameId = game.id;
+        p.gameName = game.away + ' @ ' + game.home;
+        p.isLive = game.status === 'LIVE';
+        p.gameStatus = game.status;
+        p.gameTime = game.time;
+        p.gamePeriod = game.period;
+      });
+      return players;
+    })
+  );
+
+  propResults.forEach(r => {
+    if (r.status==='fulfilled' && r.value) allProps = allProps.concat(r.value);
+  });
+
+  if (!allProps.length) {
+    // Fallback: generate sample props
+    allProps = generateSampleProps();
+  }
+
+  logStatus('Loaded ' + allProps.length + ' player props across ' + liveGames.length + ' games');
+  renderCards();
 }
 
 function generateSampleProps() {
@@ -1281,73 +1109,6 @@ function generateSampleProps() {
   return samples;
 }
 
-// ── MAIN AGENT SCAN ───────────────────────────────────────────
-async function loadAllProps() {
-  logStatus('Agent scanning for live player props...');
-  const sports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'MLS', 'WNBA'];
-  allProps = [];
-
-  // Scan next 7 days so players can buy early
-  const now = new Date();
-  const dates = Array.from({length:7}, (_,i) => {
-    const d = new Date(now); d.setDate(d.getDate()+i);
-    return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
-  });
-
-  // Fetch all sports x all dates in parallel
-  const gameResults = await Promise.allSettled(
-    sports.flatMap(s => dates.map(date => fetchGamesForSport(s, date)))
-  );
-
-  const seen = new Set();
-  const liveGames = [];
-  gameResults.forEach(r => {
-    if (r.status==='fulfilled' && r.value) {
-      r.value.filter(g => g.status==='LIVE'||g.status==='UPCOMING').forEach(g => {
-        if (!seen.has(g.id)) { seen.add(g.id); liveGames.push(g); }
-      });
-    }
-  });
-
-  if (!liveGames.length) {
-    logStatus('No games found — showing sample props');
-    allProps = generateSampleProps();
-    renderCards();
-    return;
-  }
-
-  // Fetch player stats/rosters for each game in parallel
-  const propResults = await Promise.allSettled(
-    liveGames.slice(0, 8).map(async game => {
-      let players = [];
-      if (game.status === 'LIVE') {
-        players = await fetchPlayerStats(game.id, game.sport);
-      }
-      if (!players.length) {
-        players = await generatePropsForUpcoming(game, game.sport);
-      }
-      players.forEach(p => {
-        p.gameId = game.id;
-        p.gameName = game.away + ' @ ' + game.home;
-        p.isLive = game.status === 'LIVE';
-        p.gameStatus = game.status;
-        p.gameTime = game.time;
-        p.gamePeriod = game.period;
-        p.sport = p.sport || game.sport;
-      });
-      return players;
-    })
-  );
-
-  propResults.forEach(r => {
-    if (r.status==='fulfilled' && r.value) allProps = allProps.concat(r.value);
-  });
-
-  logStatus('Loaded ' + allProps.length + ' player props across ' + liveGames.length + ' games');
-  updateSportPills();
-  renderCards();
-}
-
 // ── RENDER CARDS ──────────────────────────────────────────────
 function renderCards() {
   const grid = document.getElementById('cardsGrid');
@@ -1357,12 +1118,9 @@ function renderCards() {
   }
 
   if (!props.length) {
-    const sportName = currentSportFilter === 'ALL' ? 'any sport' : currentSportFilter;
-    const hasOtherProps = allProps.length > 0;
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);">
       <div style="font-size:40px;margin-bottom:12px;">🔍</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;">No ${sportName} props right now</div>
-      ${hasOtherProps ? `<div style="font-size:13px;">Switch to <strong style="color:var(--accent);">All Live</strong> to see available props</div>` : '<div style="font-size:13px;">Check back when games start tonight</div>'}
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;">No props available for this sport right now</div>
     </div>`;
     return;
   }
