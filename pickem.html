@@ -942,10 +942,11 @@ function filterSport(sport, btn) {
 }
 
 // ── ESPN FETCH ────────────────────────────────────────────────
-async function fetchGamesForSport(sport) {
+async function fetchGamesForSport(sport, dateStr) {
   try {
     const now = new Date();
-    const dateStr = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+    const defaultDate = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+    dateStr = dateStr || defaultDate;
     const apiSport = SPORT_MAP[sport] || sport.toLowerCase();
     const leagueMap = {'nba':'basketball/nba','nhl':'hockey/nhl','mlb':'baseball/mlb','nfl':'football/nfl','mls':'soccer/usa.1','wnba':'basketball/wnba','ncaam':'basketball/mens-college-basketball','ncaaw':'basketball/womens-college-basketball'};
     const league = leagueMap[apiSport] || 'basketball/nba';
@@ -1029,72 +1030,68 @@ async function fetchPlayerStats(gameId, sport) {
 }
 
 // Generate realistic prop lines for upcoming games using team rosters
-function generatePropsForUpcoming(game, sport) {
-  // Realistic prop lines by sport and position
-  const nbaLines = [
-    {name:'LeBron James',team:game.home,pos:'SF',lines:{pts:24.5,reb:7.5,ast:7.5}},
-    {name:'Steph Curry',team:game.away,pos:'PG',lines:{pts:26.5,reb:4.5,ast:5.5}},
-    {name:'Giannis A.',team:game.home,pos:'PF',lines:{pts:28.5,reb:11.5,ast:5.5}},
-    {name:'Luka Doncic',team:game.away,pos:'PG',lines:{pts:29.5,reb:8.5,ast:8.5}},
-  ];
-  // Use generic placeholders if we don't have real data
-  return nbaLines.slice(0,4).map((p,i) => ({
-    ...p, id: p.name+game.id, sport, gameId: game.id, gameName: game.away+' @ '+game.home,
-    isLive: false, currentStats: {pts:0,reb:0,ast:0}, activeStat: 'pts',
-    teamColor: i%2===0?'1d6b35':'1a3d6b'
-  }));
+async function fetchRosterForTeam(teamAbbr, sport) {
+  try {
+    const leagueMap = {
+      'NBA':'basketball/nba','NHL':'hockey/nhl','MLB':'baseball/mlb',
+      'NFL':'football/nfl','MLS':'soccer/usa.1','WNBA':'basketball/wnba',
+      'MM_MEN':'basketball/mens-college-basketball','MM_WOMEN':'basketball/womens-college-basketball'
+    };
+    const league = leagueMap[sport] || 'basketball/nba';
+    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${league}/teams/${teamAbbr}/roster?_=${Date.now()}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const athletes = data.athletes || [];
+    // Flatten position groups
+    let players = [];
+    athletes.forEach(group => {
+      const items = group.items || group.athletes || [];
+      items.forEach(a => players.push(a));
+    });
+    return players.slice(0, 3).map(a => ({
+      id: a.id || a.displayName,
+      name: a.displayName || a.fullName,
+      shortName: a.lastName || (a.displayName||'').split(' ').pop(),
+      pos: (a.position && a.position.abbreviation) || '',
+      teamColor: a.team && a.team.color || '1d2640'
+    }));
+  } catch(e) { return []; }
 }
 
-// ── MAIN AGENT SCAN ───────────────────────────────────────────
-async function loadAllProps() {
-  logStatus('Agent scanning for live player props...');
-  const sports = ['NBA','NHL','MLB','MM_MEN','MM_WOMEN','MLS'];
-  allProps = [];
+async function generatePropsForUpcoming(game, sport) {
+  // Try to fetch real rosters for both teams
+  const [awayPlayers, homePlayers] = await Promise.all([
+    fetchRosterForTeam(game.away, sport),
+    fetchRosterForTeam(game.home, sport)
+  ]);
 
-  const gameResults = await Promise.allSettled(sports.map(s => fetchGamesForSport(s)));
-  const liveGames = [];
-  gameResults.forEach((r,i) => {
-    if (r.status==='fulfilled') {
-      r.value.filter(g=>g.status==='LIVE'||g.status==='UPCOMING').slice(0,2).forEach(g=>{
-        g.sport = sports[i];
-        liveGames.push(g);
-      });
-    }
-  });
+  const allPlayers = [...awayPlayers.slice(0,2), ...homePlayers.slice(0,2)];
 
-  // Fetch player stats for live games (parallel)
-  const propResults = await Promise.allSettled(
-    liveGames.slice(0,6).map(async game => {
-      let players = [];
-      if (game.status === 'LIVE') {
-        players = await fetchPlayerStats(game.id, game.sport);
-      }
-      if (!players.length) {
-        players = generatePropsForUpcoming(game, game.sport);
-      }
-      players.forEach(p => {
-        p.gameId = game.id;
-        p.gameName = game.away + ' @ ' + game.home;
-        p.isLive = game.status === 'LIVE';
-        p.gameStatus = game.status;
-        p.gameTime = game.time;
-        p.gamePeriod = game.period;
-      });
-      return players;
-    })
-  );
-
-  propResults.forEach(r => {
-    if (r.status==='fulfilled' && r.value) allProps = allProps.concat(r.value);
-  });
-
-  if (!allProps.length) {
-    // Fallback: generate sample props
-    allProps = generateSampleProps();
+  if (allPlayers.length) {
+    return allPlayers.map((p, i) => {
+      const isHome = i >= awayPlayers.slice(0,2).length;
+      const team = isHome ? game.home : game.away;
+      return {
+        ...p,
+        team,
+        sport,
+        gameId: game.id,
+        gameName: game.away + ' @ ' + game.home,
+        isLive: false,
+        currentStats: {pts:0,reb:0,ast:0},
+        activeStat: 'pts',
+        lines: { pts: 15.5, reb: 4.5, ast: 3.5 }
+      };
+    });
   }
 
-  logStatus('Loaded ' + allProps.length + ' player props across ' + liveGames.length + ' games');
-  renderCards();
+  // Last resort: generic placeholders using actual team abbrs
+  return [
+    {id:'p1-'+game.id, name:game.away+' Player 1', shortName:'P1', team:game.away, pos:'G', sport, gameId:game.id, gameName:game.away+' @ '+game.home, isLive:false, currentStats:{pts:0,reb:0,ast:0}, activeStat:'pts', lines:{pts:15.5,reb:4.5,ast:3.5}, teamColor:'1d3d6b'},
+    {id:'p2-'+game.id, name:game.away+' Player 2', shortName:'P2', team:game.away, pos:'F', sport, gameId:game.id, gameName:game.away+' @ '+game.home, isLive:false, currentStats:{pts:0,reb:0,ast:0}, activeStat:'pts', lines:{pts:12.5,reb:6.5,ast:2.5}, teamColor:'1d3d6b'},
+    {id:'p3-'+game.id, name:game.home+' Player 1', shortName:'P3', team:game.home, pos:'G', sport, gameId:game.id, gameName:game.away+' @ '+game.home, isLive:false, currentStats:{pts:0,reb:0,ast:0}, activeStat:'pts', lines:{pts:15.5,reb:4.5,ast:3.5}, teamColor:'1d6b35'},
+    {id:'p4-'+game.id, name:game.home+' Player 2', shortName:'P4', team:game.home, pos:'F', sport, gameId:game.id, gameName:game.away+' @ '+game.home, isLive:false, currentStats:{pts:0,reb:0,ast:0}, activeStat:'pts', lines:{pts:12.5,reb:6.5,ast:2.5}, teamColor:'1d6b35'},
+  ];
 }
 
 function generateSampleProps() {
@@ -1107,6 +1104,71 @@ function generateSampleProps() {
     {id:'kd35',name:'Kevin Durant',shortName:'Durant',team:'PHX',pos:'SF',sport:'NBA',teamColor:'1D1160',lines:{pts:26.5,reb:6.5,ast:4.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-3',gameName:'DAL @ PHX',gameStatus:'UPCOMING',gameTime:'9:00 PM ET'},
   ];
   return samples;
+}
+
+// ── MAIN AGENT SCAN ───────────────────────────────────────────
+async function loadAllProps() {
+  logStatus('Agent scanning for live player props...');
+  const sports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'MLS', 'WNBA'];
+  allProps = [];
+
+  // Get today + tomorrow
+  const now = new Date();
+  const todayStr = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+  const tmr = new Date(now); tmr.setDate(tmr.getDate()+1);
+  const tmrStr = tmr.getFullYear() + String(tmr.getMonth()+1).padStart(2,'0') + String(tmr.getDate()).padStart(2,'0');
+
+  const gameResults = await Promise.allSettled([
+    ...sports.map(s => fetchGamesForSport(s, todayStr)),
+    ...sports.map(s => fetchGamesForSport(s, tmrStr))
+  ]);
+
+  const seen = new Set();
+  const liveGames = [];
+  gameResults.forEach(r => {
+    if (r.status==='fulfilled' && r.value) {
+      r.value.filter(g => g.status==='LIVE'||g.status==='UPCOMING').forEach(g => {
+        if (!seen.has(g.id)) { seen.add(g.id); liveGames.push(g); }
+      });
+    }
+  });
+
+  if (!liveGames.length) {
+    logStatus('No games found — showing sample props');
+    allProps = generateSampleProps();
+    renderCards();
+    return;
+  }
+
+  // Fetch player stats/rosters for each game in parallel
+  const propResults = await Promise.allSettled(
+    liveGames.slice(0, 8).map(async game => {
+      let players = [];
+      if (game.status === 'LIVE') {
+        players = await fetchPlayerStats(game.id, game.sport);
+      }
+      if (!players.length) {
+        players = await generatePropsForUpcoming(game, game.sport);
+      }
+      players.forEach(p => {
+        p.gameId = game.id;
+        p.gameName = game.away + ' @ ' + game.home;
+        p.isLive = game.status === 'LIVE';
+        p.gameStatus = game.status;
+        p.gameTime = game.time;
+        p.gamePeriod = game.period;
+        p.sport = p.sport || game.sport;
+      });
+      return players;
+    })
+  );
+
+  propResults.forEach(r => {
+    if (r.status==='fulfilled' && r.value) allProps = allProps.concat(r.value);
+  });
+
+  logStatus('Loaded ' + allProps.length + ' player props across ' + liveGames.length + ' games');
+  renderCards();
 }
 
 // ── RENDER CARDS ──────────────────────────────────────────────
