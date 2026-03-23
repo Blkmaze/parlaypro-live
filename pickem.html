@@ -941,6 +941,33 @@ function filterSport(sport, btn) {
   renderCards();
 }
 
+function updateSportPills() {
+  // Highlight pills that have available props, dim ones that don't
+  const availableSports = new Set(allProps.map(p => p.sport));
+  document.querySelectorAll('.sport-pill').forEach(pill => {
+    const onclick = pill.getAttribute('onclick') || '';
+    const match = onclick.match(/'([^']+)'/);
+    if (match) {
+      const sport = match[1];
+      if (sport === 'ALL') {
+        pill.style.opacity = '1';
+      } else {
+        pill.style.opacity = availableSports.has(sport) ? '1' : '0.35';
+      }
+    }
+  });
+  // Auto-switch to ALL if current filter has no props
+  if (currentSportFilter !== 'ALL') {
+    const hasProps = allProps.some(p => p.sport === currentSportFilter);
+    if (!hasProps) {
+      currentSportFilter = 'ALL';
+      document.querySelectorAll('.sport-pill').forEach(p => p.classList.remove('active'));
+      const allBtn = document.querySelector('.sport-pill');
+      if (allBtn) allBtn.classList.add('active');
+    }
+  }
+}
+
 // ── ESPN FETCH ────────────────────────────────────────────────
 async function fetchGamesForSport(sport, dateStr) {
   try {
@@ -1168,6 +1195,7 @@ async function loadAllProps() {
   });
 
   logStatus('Loaded ' + allProps.length + ' player props across ' + liveGames.length + ' games');
+  updateSportPills();
   renderCards();
 }
 
@@ -1180,9 +1208,12 @@ function renderCards() {
   }
 
   if (!props.length) {
+    const sportName = currentSportFilter === 'ALL' ? 'any sport' : currentSportFilter;
+    const hasOtherProps = allProps.length > 0;
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);">
       <div style="font-size:40px;margin-bottom:12px;">🔍</div>
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;">No props available for this sport right now</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;margin-bottom:8px;">No ${sportName} props right now</div>
+      ${hasOtherProps ? `<div style="font-size:13px;">Switch to <strong style="color:var(--accent);">All Live</strong> to see available props</div>` : '<div style="font-size:13px;">Check back when games start tonight</div>'}
     </div>`;
     return;
   }
@@ -1504,4 +1535,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 </script>
 </body>
 </html>
-<!-- v202603231150 -->
