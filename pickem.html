@@ -1643,7 +1643,11 @@ async function confirmEntry() {
         body: JSON.stringify(payload)
       });
       const d = await r.json();
-      if (d.ok && d.entryId) entryId = d.entryId;
+      if (d.ok && d.entryId) {
+        entryId = d.entryId;
+      } else {
+        console.error('[ParlayPro] pickem-entry failed:', d.error, d.debug);
+      }
     } catch(e) {
       // If backend fails, fall back to localStorage
       localStorage.setItem('pickem_'+Date.now(), JSON.stringify(payload));
