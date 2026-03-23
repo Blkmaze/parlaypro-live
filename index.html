@@ -1053,35 +1053,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     await agentScan();
     buildTicker().catch(()=>{});
 
-    // Agent re-scans every 5 minutes
+    // Smart polling — only update scores every 30 seconds, only rescan when games go FINAL
     setInterval(async function() {
       try {
-        const allSports=['MM_WOMEN','MM_MEN','NBA','NHL','MLB','MLS','WNBA'];
-        const results=await Promise.allSettled(allSports.map(s=>fetchEspnScores(s)));
-        let allGames=[];
-        results.forEach(r=>{if(r.status==='fulfilled'&&r.value)allGames=allGames.concat(r.value);});
-        const best=pickBestGames(allGames,10);
-        if (!best.length) return;
-        // Update existing boards scores, add new live games
-        const prevIds=new Set(boards.map(b=>b.game.id));
-        best.forEach((game,i)=>{
-          const existing=boards.find(b=>b.game.id===game.id);
-          if (existing){existing.game=game;}
-          else if (i<4&&!prevIds.has(game.id)){boards.push({game,sport:game.sport||'NBA',index:boards.length});}
-        });
+        let needsRescan = false;
+        // Refresh scores for active boards only
+        const updatedBoards = await Promise.allSettled(boards.map(async b => {
+          const fresh = await fetchEspnScores(b.sport);
+          if (!fresh) return b;
+          const updated = fresh.find(g => g.id === b.game.id);
+          if (updated) {
+            const wasLive = b.game.status === 'LIVE';
+            const nowFinal = updated.status === 'FINAL';
+            if (wasLive && nowFinal) needsRescan = true; // Game ended — find new game
+            b.game = updated;
+          }
+          return b;
+        }));
+
+        // Update board UI
         buildBoardTabs();
         buildBoardsSummary();
-        // Refresh active board header
-        const ab=getActiveBoard();
-        if (ab){
-          if(ab.game.status==='LIVE'){document.getElementById('boardScore').textContent=ab.game.awayScore+' — '+ab.game.homeScore;}
-          const scoreEl=document.getElementById('qtrLiveScore');
-          if(scoreEl&&ab.game.status==='LIVE'){scoreEl.textContent=ab.game.away+' '+(ab.game.awayScore||0)+' — '+(ab.game.homeScore||0)+' '+ab.game.home+' | Q'+(ab.game.period||'');}
+        const ab = getActiveBoard();
+        if (ab) {
+          if (ab.game.status === 'LIVE') {
+            document.getElementById('boardScore').textContent = ab.game.awayScore + ' — ' + ab.game.homeScore;
+          }
+          const scoreEl = document.getElementById('qtrLiveScore');
+          if (scoreEl && ab.game.status === 'LIVE') {
+            scoreEl.textContent = ab.game.away + ' ' + (ab.game.awayScore||0) + ' — ' + (ab.game.homeScore||0) + ' ' + ab.game.home + ' | Q' + (ab.game.period||'');
+          }
         }
-        const liveCount=boards.filter(b=>b.game.status==='LIVE').length;
-        document.getElementById('agentStatus').textContent='🤖 Agent running '+boards.length+' board'+(boards.length>1?'s':'')+' — '+liveCount+' LIVE';
-      } catch(e){}
-    }, 5*60*1000);
+        const liveCount = boards.filter(b => b.game.status === 'LIVE').length;
+        document.getElementById('agentStatus').textContent = '🤖 Agent running ' + boards.length + ' board' + (boards.length>1?'s':'') + ' — ' + liveCount + ' LIVE';
+
+        // Only do full rescan if a game just ended
+        if (needsRescan) {
+          logStatus('Game ended — agent scanning for new games...', false);
+          setTimeout(() => agentScan(), 3000); // 3 second delay then rescan
+        }
+      } catch(e) {}
+    }, 30000); // Every 30 seconds
 
   } catch(e) { logStatus('INIT FAILED: '+e.message, true); }
 });
