@@ -1462,13 +1462,6 @@ async function fetchEspnScores(sport) {
     return null;
   }
 }
-    logStatus('No games found via ESPN direct for ' + sport, true);
-    return null;
-  } catch (e) {
-    logStatus('ESPN fetch failed for ' + sport + ': ' + e.message, true);
-    return null;
-  }
-}
 
 // ── TICKER ───────────────────────────────────────────────────────
 async function buildTicker() {
