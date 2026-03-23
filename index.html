@@ -952,7 +952,7 @@
         </div>
       </div>
       <div class="sport-controls">
-        <select class="sport-select" id="sportSelect" style="opacity:0.85;pointer-events:none;">
+        <select class="sport-select" id="sportSelect" style="opacity:1;pointer-events:none;">
           <option value="NBA">🏀 NBA</option>
           <option value="NHL">🏒 NHL</option>
           <option value="MLB">⚾ MLB</option>
@@ -963,9 +963,9 @@
           <option value="MM_WOMEN">🏀 March Madness (Women)</option>
         </select>
         <div style="display:flex;align-items:center;gap:4px;">
-          <input type="date" id="gameDate" class="game-select" style="min-width:130px;color-scheme:dark;opacity:0.85;pointer-events:none;" />
+          <input type="date" id="gameDate" class="game-select" style="min-width:130px;color-scheme:dark;opacity:1;pointer-events:none;" />
         </div>
-        <select class="game-select" id="gameSelect" style="opacity:0.85;pointer-events:none;">
+        <select class="game-select" id="gameSelect" style="opacity:1;pointer-events:none;">
           <!-- populated by JS -->
         </select>
       </div>
@@ -1129,24 +1129,20 @@
         <!-- Pay Willie -->
         <div class="pay-label">Pay Willie</div>
         <div class="pay-grid">
-          <a href="https://cash.app/$7707438091" target="_blank" style="text-decoration:none;">
-          <div class="pay-card pay-cashapp" style="cursor:pointer;">
+          <div class="pay-card pay-cashapp" style="cursor:default;">
             <div class="pay-icon pay-icon-cashapp">$</div>
             <div class="pay-info">
               <div class="pay-name">Cash App</div>
               <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://cash.app/%247707438091" alt="Cash App QR" style="width:70px;height:70px;border-radius:6px;margin-top:4px;display:block;" />
             </div>
           </div>
-          </a>
-          <a href="https://paypal.me/williemayes" target="_blank" style="text-decoration:none;">
-          <div class="pay-card pay-paypal" style="cursor:pointer;">
+          <div class="pay-card pay-paypal" style="cursor:default;">
             <div class="pay-icon pay-icon-paypal">P</div>
             <div class="pay-info">
               <div class="pay-name">PayPal</div>
               <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://paypal.me/williemayes" alt="PayPal QR" style="width:70px;height:70px;border-radius:6px;margin-top:4px;display:block;" />
             </div>
           </div>
-          </a>
         </div>
 
         <!-- CTA -->
@@ -2289,5 +2285,3 @@ document.addEventListener('DOMContentLoaded', async () => {
 <script src="/props.js"></script>
 </body>
 </html>
-<!-- v202603222032 -->
-
