@@ -49,7 +49,7 @@
   .agent-status { font-size:12px; color:var(--text3); }
 
   /* BOARD TABS */
-  .boards-nav { display:flex; gap:8px; margin-bottom:16px; overflow-x:auto; padding-bottom:4px; }
+  .boards-nav { display:flex; gap:8px; margin-bottom:16px; overflow-x:auto; padding-bottom:4px; flex-wrap:wrap; }
   .board-nav-btn {
     flex-shrink:0; padding:8px 16px; border-radius:10px; font-size:12px; font-weight:700;
     border:1px solid var(--border2); cursor:pointer; transition:all 0.15s;
@@ -482,9 +482,9 @@ function getCurrentGame() { const b = getActiveBoard(); return b ? b.game : null
 function getEspnDateParam() { return currentDate.replace(/-/g,''); }
 
 // ── ESPN FETCH ───────────────────────────────────────────────
-async function fetchEspnScores(sport) {
+async function fetchEspnScores(sport, dateOverride) {
   try {
-    const dateStr = getEspnDateParam();
+    const dateStr = dateOverride || getEspnDateParam();
     const apiSport = SPORT_MAP[sport] || sport.toLowerCase();
     const espnLeagueMap = {
       'nba':'basketball/nba','nhl':'hockey/nhl','mlb':'baseball/mlb',
@@ -542,13 +542,32 @@ async function pickBestGamesAI(allGames, maxBoards) {
 
 async function agentScan() {
   logStatus('Agent scanning all sports...', false);
-  document.getElementById('agentStatus').textContent = '🔍 Agent scanning for best live games...';
-  const allSports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'MLS', 'WNBA'];
-  const results = await Promise.allSettled(allSports.map(sport => fetchEspnScores(sport)));
-  let allGames = [];
-  results.forEach(r => { if (r.status === 'fulfilled' && r.value) allGames = allGames.concat(r.value); });
+  document.getElementById('agentStatus').textContent = '🔍 Agent scanning today + tomorrow...';
+  const allSports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'NFL', 'MLS', 'WNBA'];
 
-  const best = await pickBestGamesAI(allGames, 4);
+  // Get today and tomorrow dates
+  const now = new Date();
+  const todayStr = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
+  const tmr = new Date(now); tmr.setDate(tmr.getDate() + 1);
+  const tmrStr = tmr.getFullYear() + String(tmr.getMonth()+1).padStart(2,'0') + String(tmr.getDate()).padStart(2,'0');
+
+  // Scan today AND tomorrow in parallel
+  const allFetches = allSports.flatMap(sport => [
+    fetchEspnScores(sport, todayStr),
+    fetchEspnScores(sport, tmrStr)
+  ]);
+  const results = await Promise.allSettled(allFetches);
+  let allGames = [];
+  const seen = new Set();
+  results.forEach(r => {
+    if (r.status === 'fulfilled' && r.value) {
+      r.value.forEach(g => {
+        if (!seen.has(g.id)) { seen.add(g.id); allGames.push(g); }
+      });
+    }
+  });
+
+  const best = await pickBestGamesAI(allGames, 10);
   if (!best.length) {
     document.getElementById('agentStatus').textContent = '⚠️ No games found — check back soon';
     return;
@@ -579,7 +598,7 @@ function buildBoardTabs() {
       ? '<span class="nav-badge nav-live">LIVE</span>'
       : isFinal ? '<span class="nav-badge nav-final">FINAL</span>' : '';
     return `<button class="board-nav-btn${i===activeBoardIdx?' active':''}" onclick="switchBoard(${i})">
-      Board #${i+1} · ${g.away} @ ${g.home} ${badge}
+      Board #${i+1} · ${g.away} @ ${g.home} ${badge}${g.status==='UPCOMING'&&g.time?' <span style="font-size:9px;opacity:0.7;">'+g.time+'</span>':''}
     </button>`;
   }).join('');
 }
@@ -1033,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const results=await Promise.allSettled(allSports.map(s=>fetchEspnScores(s)));
         let allGames=[];
         results.forEach(r=>{if(r.status==='fulfilled'&&r.value)allGames=allGames.concat(r.value);});
-        const best=pickBestGames(allGames,4);
+        const best=pickBestGames(allGames,10);
         if (!best.length) return;
         // Update existing boards scores, add new live games
         const prevIds=new Set(boards.map(b=>b.game.id));
