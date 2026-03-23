@@ -1,2328 +1,606 @@
 <!DOCTYPE html>
-<!-- v20260316_cleaned -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>ParlayPro — Super Squares</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #0a0a0a;
-    --surface: #111111;
-    --surface2: #1a1a1a;
-    --surface3: #222222;
-    --border: #2a2a2a;
-    --border2: #333333;
-    --green: #16a34a;
-    --green-light: #22c55e;
-    --green-dim: rgba(22,163,74,0.15);
-    --green-glow: rgba(34,197,94,0.08);
-    --yellow: #eab308;
-    --red: #dc2626;
-    --blue: #3b82f6;
-    --text: #f5f5f5;
-    --text2: #a3a3a3;
-    --text3: #525252;
-    --cashapp: #00D632;
-    --paypal: #0070ba;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    padding: 0;
-    margin: 0;
-  }
-
-  .page-wrap {
-    padding: 24px 16px;
-    margin-top: 38px;
-  }
-
-  /* SCORE TICKER */
-  .ticker-wrap {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    background: #000;
-    border-bottom: 1px solid var(--border2);
-    overflow: hidden;
-    height: 38px;
-    z-index: 100;
-  }
-  .ticker-inner {
-    display: inline-flex;
-    align-items: center;
-    height: 38px;
-    white-space: nowrap;
-    animation: scroll 80s linear infinite;
-  }
-  .ticker-inner:hover { animation-play-state: paused; }
-  .ticker-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-right: 40px;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .ticker-item:hover { background: #1a1a1a; }
-  .ticker-score { color: var(--yellow); font-family: 'IBM Plex Mono', monospace; font-weight: 700; }
-  .ticker-badge { font-size: 9px; font-weight: 800; padding: 2px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .badge-live { background: var(--red); color: white; animation: pulse 1.5s ease-in-out infinite; }
-  .badge-final { background: #3f3f3f; color: #aaa; }
-  .badge-upcoming { background: #713f12; color: #fde68a; }
-
-  @keyframes scroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-
-  /* LAYOUT */
-  .layout {
-    display: grid;
-    grid-template-columns: 1fr 340px;
-    gap: 20px;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  /* GRID BOARD */
-  .board-panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .board-header {
-    background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .board-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 28px;
-    letter-spacing: 1px;
-    color: var(--text);
-  }
-
-  .board-subtitle { font-size: 12px; color: var(--text2); margin-top: 2px; display: flex; align-items: center; gap: 6px; }
-
-  .sport-controls {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .sport-select, .game-select {
-    background: var(--surface3);
-    border: 1px solid var(--border2);
-    color: var(--text);
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .sport-select:focus, .game-select:focus { border-color: var(--green); }
-
-  .grid-wrap {
-    padding: 20px;
-    overflow-x: auto;
-  }
-
-  .grid-container {
-    display: grid;
-    grid-template-columns: 44px repeat(10, 1fr);
-    gap: 3px;
-    min-width: 560px;
-  }
-
-  .axis-header {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 14px;
-    font-weight: 700;
-    aspect-ratio: 1;
-  }
-
-  .axis-top { color: var(--green-light); }
-  .axis-left { color: #60a5fa; }
-  .axis-corner { background: transparent; border: none; }
-
-  .team-banner {
-    grid-column: 2 / 12;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 700;
-    padding: 6px;
-    letter-spacing: 0.05em;
-    color: var(--text);
-    text-transform: uppercase;
-  }
-
-  .cell {
-    aspect-ratio: 1;
-    border-radius: 4px;
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.12s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .cell-open {
-    background: var(--surface2);
-    color: var(--text3);
-  }
-  .cell-open:hover {
-    background: var(--surface3);
-    border-color: var(--green);
-    color: var(--green-light);
-  }
-
-  .cell-sold {
-    background: var(--surface3);
-    border-color: #2a2a2a;
-    color: var(--text2);
-    cursor: default;
-  }
-
-  .cell-mine {
-    background: linear-gradient(135deg, #16a34a, #15803d);
-    border-color: var(--green-light);
-    color: white;
-    box-shadow: 0 0 8px rgba(34,197,94,0.25);
-  }
-
-  /* Board selector tabs */
-  .board-tabs {
-    display: flex;
-    gap: 6px;
-    padding: 0 20px 12px;
-  }
-
-  .board-tab {
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    border: 1px solid var(--border2);
-    cursor: pointer;
-    transition: all 0.15s;
-    background: transparent;
-    color: var(--text2);
-  }
-
-  .board-tab.active {
-    background: var(--green);
-    border-color: var(--green);
-    color: white;
-  }
-
-  /* ===================== SIDEBAR ===================== */
-  .sidebar { display: flex; flex-direction: column; gap: 12px; }
-
-  /* MAIN CARD */
-  .main-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-  }
-
-  .card-header {
-    background: linear-gradient(135deg, #15803d 0%, #16a34a 50%, #14532d 100%);
-    padding: 16px 18px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-  }
-
-  .card-header::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 10px,
-      rgba(255,255,255,0.02) 10px,
-      rgba(255,255,255,0.02) 11px
-    );
-  }
-
-  .card-header-text { position: relative; }
-  .card-header-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    letter-spacing: 2px;
-    color: white;
-    line-height: 1;
-  }
-  .card-header-sub { font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 3px; }
-
-  .available-badge {
-    position: relative;
-    background: rgba(255,255,255,0.12);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 10px;
-    padding: 8px 14px;
-    text-align: center;
-  }
-  .available-num {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 26px;
-    color: white;
-    line-height: 1;
-  }
-  .available-label { font-size: 9px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.1em; }
-
-  /* PARLAY BOARD SECTION */
-  .parlay-section {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .section-label {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 10px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .status-dot {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 9px;
-    font-weight: 800;
-    padding: 2px 7px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .status-live { background: rgba(220,38,38,0.2); color: #f87171; border: 1px solid rgba(220,38,38,0.3); }
-  .status-live::before { content: '●'; margin-right: 3px; animation: pulse 1s infinite; }
-  .status-scheduled { background: rgba(234,179,8,0.15); color: #fbbf24; border: 1px solid rgba(234,179,8,0.25); }
-
-  /* Odds grid */
-  .odds-header-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px;
-    margin-bottom: 4px;
-  }
-  .odds-col-label {
-    text-align: center;
-    font-size: 9px;
-    font-weight: 600;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .odds-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6px;
-  }
-
-  .odds-col { display: flex; flex-direction: column; gap: 4px; }
-
-  .odds-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    padding: 8px 6px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.15s;
-    gap: 2px;
-  }
-
-  .odds-btn:hover {
-    background: var(--surface3);
-    border-color: #404040;
-  }
-
-  .odds-btn.selected {
-    background: rgba(22,163,74,0.2);
-    border-color: var(--green);
-    box-shadow: 0 0 0 1px rgba(34,197,94,0.15);
-  }
-
-  .odds-btn-label {
-    font-size: 9px;
-    color: var(--text3);
-    font-weight: 600;
-    text-transform: uppercase;
-    text-align: center;
-    line-height: 1.2;
-    letter-spacing: 0.03em;
-  }
-
-  .odds-btn.selected .odds-btn-label { color: rgba(134,239,172,0.7); }
-
-  .odds-value {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--green-light);
-  }
-
-  .odds-btn.selected .odds-value { color: #86efac; }
-
-  /* Selected Legs */
-  .legs-section {
-    padding: 10px 16px;
-    background: rgba(22,163,74,0.06);
-    border-bottom: 1px solid rgba(22,163,74,0.15);
-  }
-
-  .legs-title {
-    font-size: 9px;
-    font-weight: 800;
-    color: var(--green-light);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-bottom: 6px;
-  }
-
-  .leg-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 0;
-    border-bottom: 1px solid rgba(22,163,74,0.1);
-    font-size: 11px;
-  }
-  .leg-row:last-child { border-bottom: none; }
-  .leg-label { color: var(--text2); }
-  .leg-odds { font-family: 'IBM Plex Mono', monospace; font-weight: 700; color: var(--green-light); font-size: 12px; }
-
-  /* Buy section */
-  .buy-section { padding: 14px 16px; }
-
-  .buy-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .buy-meta-label { font-size: 12px; color: var(--text2); }
-  .buy-meta-value { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 700; color: var(--text); }
-
-  /* Quantity buttons */
-  .qty-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 5px;
-    margin-bottom: 12px;
-  }
-
-  .qty-btn {
-    padding: 8px 0;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    color: var(--text2);
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
-  }
-
-  .qty-btn:hover { border-color: #404040; color: var(--text); background: var(--surface3); }
-
-  .qty-btn.active {
-    background: var(--green);
-    border-color: var(--green-light);
-    color: white;
-    box-shadow: 0 2px 10px rgba(22,163,74,0.3);
-  }
-
-  /* Total row */
-  .total-row {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 14px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-  }
-
-  .total-left {}
-  .total-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
-  .total-amount { font-family: 'Bebas Neue', sans-serif; font-size: 30px; color: var(--text); letter-spacing: 1px; line-height: 1; }
-  .total-right { text-align: right; }
-  .total-squares { font-size: 11px; color: var(--text2); }
-  .total-legs { font-size: 11px; color: var(--green-light); margin-top: 2px; }
-
-  /* Payment methods */
-  .pay-label {
-    font-size: 9px;
-    font-weight: 800;
-    color: var(--text3);
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    text-align: center;
-    margin-bottom: 7px;
-  }
-
-  .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 12px; }
-
-  .pay-card {
-    border-radius: 10px;
-    padding: 9px 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border: 1px solid transparent;
-    transition: all 0.15s;
-    cursor: pointer;
-  }
-
-  .pay-card:hover { filter: brightness(1.1); }
-
-  .pay-cashapp {
-    background: rgba(0,214,50,0.08);
-    border-color: rgba(0,214,50,0.25);
-  }
-
-  .pay-paypal {
-    background: rgba(0,112,186,0.08);
-    border-color: rgba(0,112,186,0.25);
-  }
-
-  .pay-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 900;
-    font-size: 14px;
-    flex-shrink: 0;
-  }
-
-  .pay-icon-cashapp { background: var(--cashapp); color: white; }
-  .pay-icon-paypal { background: var(--paypal); color: white; font-style: italic; font-size: 13px; }
-
-  .pay-info {}
-  .pay-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
-  .pay-cashapp .pay-name { color: var(--cashapp); }
-  .pay-paypal .pay-name { color: #60a5fa; }
-  .pay-handle { font-size: 10px; font-family: 'IBM Plex Mono', monospace; color: var(--text); }
-
-  /* CTA */
-  .cta-btn {
-    width: 100%;
-    background: linear-gradient(135deg, #16a34a, #15803d);
-    border: 1px solid var(--green-light);
-    border-radius: 12px;
-    color: white;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 20px;
-    letter-spacing: 2px;
-    padding: 14px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.15s;
-    box-shadow: 0 4px 20px rgba(22,163,74,0.25);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .cta-btn::before {
-    content: '';
-    position: absolute;
-    top: 0; left: -100%;
-    width: 60%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-    transition: left 0.5s;
-  }
-
-  .cta-btn:hover::before { left: 150%; }
-  .cta-btn:hover { background: linear-gradient(135deg, #15803d, #166534); box-shadow: 0 4px 24px rgba(22,163,74,0.4); transform: translateY(-1px); }
-  .cta-btn:active { transform: translateY(0) scale(0.98); }
-
-  .cta-sub { font-size: 10px; color: var(--text3); text-align: center; margin-top: 6px; }
-
-  /* LEGEND CARD */
-  .legend-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 14px;
-  }
-
-  .legend-title { font-size: 9px; font-weight: 800; color: var(--text3); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; }
-  .legend-items { display: flex; gap: 12px; }
-  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
-  .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
-
-  /* TODAY'S GAMES CARD */
-  .games-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-  }
-
-  .games-card-header {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text);
-  }
-
-  .games-card-header svg { color: #60a5fa; }
-
-  .games-list { padding: 8px; max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
-
-  .game-row {
-    padding: 9px 10px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    cursor: pointer;
-    transition: all 0.12s;
-    background: rgba(255,255,255,0.01);
-  }
-
-  .game-row:hover { background: var(--surface2); border-color: var(--border2); }
-  .game-row.active { background: var(--surface3); border-color: var(--green); }
-
-  .game-row-top { display: flex; justify-content: space-between; align-items: center; }
-  .game-teams { font-size: 12px; font-weight: 600; color: var(--text2); }
-  .game-row.active .game-teams { color: var(--text); }
-
-  .game-score { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; color: var(--yellow); }
-
-  /* ADMIN CARD */
-  .admin-card {
-    background: rgba(220,38,38,0.05);
-    border: 1px solid rgba(220,38,38,0.2);
-    border-radius: 12px;
-    padding: 12px 14px;
-  }
-
-  .admin-title { font-size: 9px; font-weight: 800; color: #f87171; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
-
-  .admin-btns { display: flex; flex-direction: column; gap: 5px; }
-
-  .admin-btn {
-    width: 100%;
-    padding: 7px 10px;
-    border-radius: 7px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
-    border: 1px solid transparent;
-  }
-
-  .admin-btn-blue { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.25); color: #93c5fd; }
-  .admin-btn-blue:hover { background: rgba(59,130,246,0.2); }
-  .admin-btn-green { background: rgba(22,163,74,0.1); border-color: rgba(22,163,74,0.25); color: #86efac; }
-  .admin-btn-green:hover { background: rgba(22,163,74,0.2); }
-  .admin-btn-red { background: rgba(220,38,38,0.1); border-color: rgba(220,38,38,0.25); color: #fca5a5; }
-  .admin-btn-red:hover { background: rgba(220,38,38,0.2); }
-
-  /* MODAL */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(4px);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    animation: fadeIn 0.2s ease;
-  }
-  .modal-overlay.open { display: flex; }
-
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 20px;
-    max-width: 400px;
-    width: 100%;
-    overflow: hidden;
-    animation: slideUp 0.25s ease;
-  }
-
-  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-  .modal-header {
-    padding: 24px 24px 16px;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .modal-icon {
-    width: 56px; height: 56px;
-    background: var(--green-dim);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 12px;
-    font-size: 24px;
-  }
-
-  .modal-title { font-size: 20px; font-weight: 800; color: var(--text); }
-  .modal-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
-
-  .modal-body { padding: 16px 24px 24px; }
-
-  .modal-total {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-  }
-
-  .modal-total-label { font-size: 12px; color: var(--text2); }
-  .modal-total-amount { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--green-light); letter-spacing: 1px; }
-
-  .modal-input-label { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
-  .modal-input {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    padding: 10px 14px;
-    color: var(--text);
-    font-size: 18px;
-    font-family: 'IBM Plex Mono', monospace;
-    text-align: center;
-    font-weight: 700;
-    letter-spacing: 6px;
-    text-transform: uppercase;
-    outline: none;
-    transition: border-color 0.15s;
-    margin-bottom: 14px;
-  }
-  .modal-input:focus { border-color: var(--green); }
-
-  .modal-pay-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-
-  .modal-pay-option {
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: 10px;
-    padding: 10px 6px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-  .modal-pay-option:hover { border-color: #404040; background: var(--surface3); }
-  .modal-pay-option.selected { border-color: var(--green); background: var(--green-dim); }
-
-  .modal-pay-icon {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 900;
-    font-size: 16px;
-    color: white;
-  }
-
-  .modal-pay-name { font-size: 10px; font-weight: 700; color: var(--text); }
-
-  .modal-cta {
-    width: 100%;
-    background: var(--green);
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-size: 15px;
-    font-weight: 800;
-    padding: 13px;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-  }
-  .modal-cta:hover { background: #15803d; }
-  .modal-cta:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  .modal-close {
-    position: absolute;
-    top: 16px; right: 16px;
-    background: var(--surface3);
-    border: 1px solid var(--border2);
-    border-radius: 50%;
-    width: 28px; height: 28px;
-    color: var(--text2);
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
-    transition: all 0.15s;
-  }
-  .modal-close:hover { background: var(--border2); color: var(--text); }
-
-  /* CONFIRM MODAL */
-  .confirm-modal {
-    text-align: center;
-    padding: 32px 24px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .confirm-icon {
-    width: 72px; height: 72px;
-    background: var(--green-dim);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 36px;
-    border: 2px solid rgba(34,197,94,0.3);
-  }
-
-  .confirm-title { font-family: 'Bebas Neue', sans-serif; font-size: 34px; letter-spacing: 2px; color: var(--text); }
-  .confirm-msg { font-size: 16px; color: var(--text2); }
-  .confirm-badge { background: var(--green-dim); border: 1px solid rgba(34,197,94,0.3); border-radius: 10px; padding: 10px 20px; }
-  .confirm-badge-text { font-size: 13px; font-weight: 700; color: var(--green-light); }
-  .confirm-badge-sub { font-size: 10px; color: rgba(134,239,172,0.6); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3px; }
-
-  .confirm-btn {
-    width: 100%;
-    background: var(--green);
-    border: none;
-    border-radius: 12px;
-    color: white;
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 20px;
-    letter-spacing: 2px;
-    padding: 14px;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .confirm-btn:hover { background: #15803d; }
-
-  /* scrollbar */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
-
-  @media (max-width: 768px) {
-    .layout { grid-template-columns: 1fr; }
-    .page-wrap { padding: 8px; }
-  }
-
-  @media (max-width: 600px) {
-    .board-header {
-      flex-direction: column !important;
-      align-items: flex-start !important;
-      padding: 12px 14px !important;
-      gap: 10px !important;
-    }
-    .board-title {
-      font-size: 17px !important;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 100%;
-    }
-    .board-subtitle {
-      font-size: 11px !important;
-    }
-    .sport-controls {
-      width: 100% !important;
-      flex-wrap: nowrap !important;
-      gap: 6px !important;
-    }
-    .sport-select,
-    .game-select {
-      flex: 1 1 0 !important;
-      min-width: 0 !important;
-      font-size: 12px !important;
-      padding: 6px 6px !important;
-      max-width: 50% !important;
-    }
-    .board-tabs {
-      width: 100% !important;
-      gap: 6px !important;
-    }
-    .board-tab {
-      font-size: 11px !important;
-      padding: 6px 10px !important;
-    }
-    .ticker-wrap {
-      font-size: 11px !important;
-    }
-    .layout{flex-direction:column!important;}
-    .sidebar{width:100%!important;max-width:100%!important;}
-    .board-panel{width:100%!important;}
-  }
+:root {
+  --bg0:#0a0a0f;--bg1:#12121a;--bg2:#1a1a26;--bg3:#22223a;
+  --accent:#6c63ff;--accent2:#ff6584;--yellow:#f5c518;--green:#22c55e;--red:#ef4444;
+  --text1:#f0f0ff;--text2:#a8a8c8;--text3:#6060a0;
+  --cell-open:#1e1e2e;--cell-sold:#2d1f3d;--cell-mine:#1a3a2a;
+  --border:#2a2a40;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg0);color:var(--text1);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+/* HEADER */
+.header{background:var(--bg1);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:12px;}
+.logo{font-size:18px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.header-sub{font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;}
+/* TICKER */
+.ticker-wrap{background:var(--bg1);border-bottom:1px solid var(--border);overflow:hidden;height:32px;display:flex;align-items:center;}
+.ticker-inner{display:flex;gap:32px;animation:ticker 40s linear infinite;white-space:nowrap;padding:0 16px;}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick-item{font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text2);}
+.tick-item span{color:var(--yellow);margin-left:6px;}
+/* LAYOUT */
+.app{display:flex;flex:1;gap:0;overflow:hidden;}
+/* GAME LIST */
+.game-list{width:200px;min-width:200px;background:var(--bg1);border-right:1px solid var(--border);overflow-y:auto;padding:8px;}
+.sport-label{font-size:10px;font-weight:700;color:var(--text3);padding:8px 6px 4px;letter-spacing:.08em;text-transform:uppercase;}
+.game-btn{width:100%;background:transparent;border:1px solid transparent;border-radius:8px;padding:8px 10px;cursor:pointer;text-align:left;color:var(--text1);margin-bottom:2px;transition:all .15s;}
+.game-btn:hover{background:var(--bg2);border-color:var(--border);}
+.game-btn.active{background:var(--bg3);border-color:var(--accent);}
+.game-btn-teams{font-size:12px;font-weight:600;}
+.game-btn-time{font-size:10px;color:var(--text3);margin-top:2px;font-family:'IBM Plex Mono',monospace;}
+.game-btn.active .game-btn-time{color:var(--accent);}
+/* MAIN */
+.main{flex:1;overflow-y:auto;padding:12px;}
+.board-wrap{background:var(--bg1);border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:12px;}
+.board-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.board-title{font-size:14px;font-weight:700;}
+.board-meta{font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;}
+.avail-badge{background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;font-family:'IBM Plex Mono',monospace;}
+.avail-badge span{color:var(--green);}
+/* GRID */
+.grid-wrap{padding:8px;overflow-x:auto;}
+.squares-grid{display:grid;grid-template-columns:36px repeat(10,1fr);gap:2px;min-width:340px;}
+.axis-corner{background:transparent;}
+.axis-top,.axis-left{background:var(--bg3);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text2);font-family:'IBM Plex Mono',monospace;height:28px;}
+.axis-left{height:auto;min-height:32px;}
+.team-banner{grid-column:2/12;background:var(--bg3);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--text2);text-align:center;margin-bottom:2px;}
+.cell{border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;min-height:32px;cursor:pointer;transition:all .12s;font-family:'IBM Plex Mono',monospace;border:1px solid transparent;}
+.cell-open{background:var(--cell-open);border-color:var(--border);}
+.cell-open:hover{background:var(--bg3);border-color:var(--accent);transform:scale(1.05);}
+.cell-sold{background:var(--cell-sold);color:var(--accent2);cursor:default;border-color:#3d1f3d;}
+.cell-mine{background:var(--cell-mine);color:var(--green);cursor:default;border-color:#1a4a2a;}
+/* SIDEBAR */
+.sidebar{width:260px;min-width:260px;background:var(--bg1);border-left:1px solid var(--border);overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.card-title{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
+/* CLAIM */
+.initials-row{display:flex;gap:6px;margin-bottom:10px;}
+.initials-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text1);font-size:13px;font-weight:600;font-family:'IBM Plex Mono',monospace;outline:none;}
+.initials-input:focus{border-color:var(--accent);}
+.qty-row{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap;}
+.qty-btn{flex:1;min-width:28px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 4px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s;text-align:center;}
+.qty-btn.active,.qty-btn:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+.buy-btn{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;padding:10px;color:#fff;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:.02em;}
+.buy-btn:hover{opacity:.9;}
+.buy-btn:disabled{opacity:.5;cursor:not-allowed;}
+/* ODDS */
+.odds-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;}
+.odds-btn{background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px;cursor:pointer;transition:all .12s;}
+.odds-btn:hover,.odds-btn.active{border-color:var(--accent);background:var(--bg3);}
+.odds-label{font-size:10px;color:var(--text3);margin-bottom:2px;}
+.odds-val{font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text1);}
+.odds-val.pos{color:var(--green);}
+.odds-val.neg{color:var(--red);}
+/* ADMIN */
+.admin-section{border-top:1px solid var(--border);padding-top:12px;margin-top:4px;}
+.admin-label{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;}
+.admin-btn{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:8px 10px;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;text-align:left;margin-bottom:6px;transition:all .12s;}
+.admin-btn:hover{border-color:var(--accent);color:var(--text1);}
+.admin-btn-red{border-color:#3a1a1a;color:var(--red);}
+.admin-btn-red:hover{background:rgba(239,68,68,.1);border-color:var(--red);}
+.admin-btn-green{border-color:#1a3a1a;color:var(--green);}
+.admin-btn-green:hover{background:rgba(34,197,94,.1);border-color:var(--green);}
+/* STATUS */
+.status-dot{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;padding:2px 8px;border-radius:10px;}
+.status-live{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.status-sched{background:rgba(108,99,255,.15);color:var(--accent);border:1px solid rgba(108,99,255,.3);}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg1);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:340px;width:90%;text-align:center;}
+.modal h3{font-size:16px;font-weight:800;margin-bottom:8px;}
+.modal p{font-size:13px;color:var(--text2);margin-bottom:16px;}
+.modal-btns{display:flex;gap:8px;justify-content:center;}
+.modal-btn{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 20px;color:var(--text1);font-size:13px;font-weight:600;cursor:pointer;}
+.modal-btn-primary{background:var(--accent);border-color:var(--accent);}
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--green);border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;color:var(--green);z-index:200;opacity:0;transition:opacity .3s;pointer-events:none;}
+.toast.show{opacity:1;}
+/* EMPTY STATE */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:var(--text3);gap:8px;}
+.empty-state .big{font-size:32px;}
+.empty-state p{font-size:13px;}
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+@media(max-width:700px){
+  .game-list{width:130px;min-width:130px;}
+  .sidebar{width:200px;min-width:200px;}
+  .game-btn-teams{font-size:11px;}
+}
+@media(max-width:520px){
+  .app{flex-direction:column;}
+  .game-list{width:100%;min-width:0;border-right:none;border-bottom:1px solid var(--border);max-height:120px;display:flex;flex-direction:row;flex-wrap:wrap;padding:6px;}
+  .sport-label{display:none;}
+  .game-btn{width:auto;padding:5px 8px;}
+  .sidebar{width:100%;min-width:0;border-left:none;border-top:1px solid var(--border);}
+}
 </style>
 </head>
 <body>
 
-<!-- STATUS BAR (debug) -->
-<div id="statusBar" style="position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #333;padding:6px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#22c55e;z-index:9999;">Loading...</div>
+<div class="header">
+  <div class="logo">ParlayPro</div>
+  <div class="header-sub">Super Squares · March 9, 2026</div>
+</div>
 
-<!-- SCORE TICKER -->
 <div class="ticker-wrap">
   <div class="ticker-inner" id="ticker">
-    <!-- populated by JS -->
+    <span class="tick-item">76ers @ Cavaliers<span>7:00 PM ET</span></span>
+    <span class="tick-item">Nuggets @ Thunder<span>7:30 PM ET</span></span>
+    <span class="tick-item">Grizzlies @ Nets<span>7:30 PM ET</span></span>
+    <span class="tick-item">Warriors @ Jazz<span>9:00 PM ET</span></span>
+    <span class="tick-item">Knicks @ Clippers<span>9:30 PM ET</span></span>
+    <span class="tick-item">Kings @ Blue Jackets<span>3:00 PM ET</span></span>
+    <span class="tick-item">Flames @ Capitals<span>6:00 PM ET</span></span>
+    <span class="tick-item">Rangers @ Flyers<span>6:00 PM ET</span></span>
+    <span class="tick-item">Mammoth @ Blackhawks<span>7:30 PM ET</span></span>
+    <span class="tick-item">Senators @ Canucks<span>9:00 PM ET</span></span>
+    <span class="tick-item">76ers @ Cavaliers<span>7:00 PM ET</span></span>
+    <span class="tick-item">Nuggets @ Thunder<span>7:30 PM ET</span></span>
+    <span class="tick-item">Grizzlies @ Nets<span>7:30 PM ET</span></span>
+    <span class="tick-item">Warriors @ Jazz<span>9:00 PM ET</span></span>
+    <span class="tick-item">Knicks @ Clippers<span>9:30 PM ET</span></span>
   </div>
 </div>
 
-<!-- LAYOUT -->
-<div class="page-wrap">
-<div class="layout">
+<div class="app">
+  <!-- GAME LIST -->
+  <div class="game-list">
+    <div class="sport-label">🏀 NBA</div>
+    <button class="game-btn" onclick="selectGame('phi-cle')">
+      <div class="game-btn-teams">76ers @ Cavs</div>
+      <div class="game-btn-time">7:00 PM ET</div>
+    </button>
+    <button class="game-btn" onclick="selectGame('den-okc')">
+      <div class="game-btn-teams">Nuggets @ Thunder</div>
+      <div class="game-btn-time">7:30 PM ET</div>
+    </button>
+    <button class="game-btn" onclick="selectGame('mem-bkn')">
+      <div class="game-btn-teams">Grizzlies @ Nets</div>
+      <div class="game-btn-time">7:30 PM ET</div>
+    </button>
+    <button class="game-btn" onclick="selectGame('gsw-uta')">
+      <div class="game-btn-teams">Warriors @ Jazz</div>
+      <div class="game-btn-time">9:00 PM ET</div>
+    </button>
+    <button class="game-btn" onclick="selectGame('nyk-lac')">
+      <div class="game-btn-teams">Knicks @ Clippers</div>
+      <div class="game-btn-time">9:30 PM ET</div>
+    </button>
+    <div class="sport-label">🏒 NHL</div>
+    <button class="game-btn" onclick="selectGame('lak-cbj')">
+      <div class="game-btn-teams">Kings @ Blue Jackets</div>
+      <div class="game-btn-time">3:00 PM ET</div>
+    </button>
+    <button class="game-btn" onclick="selectGame('cgy-wsh')">
+      <div class="game-btn-teams">Flames @ Capitals</div>
+      <div class="game-btn-time">6:00 PM ET</div>
+    </button>
+    <button class="game-btn" onclick="selectGame('nyr-phi')">
+      <div class="game-btn-teams">Rangers @ Flyers</div>
+      <div class="game-btn-time">6:00 PM ET</div>
+    </button>
+    <button class="game-btn" onclick="selectGame('col-chi')">
+      <div class="game-btn-teams">Mammoth @ Blackhawks</div>
+      <div class="game-btn-time">7:30 PM ET</div>
+    </button>
+    <button class="game-btn" onclick="selectGame('ott-van')">
+      <div class="game-btn-teams">Senators @ Canucks</div>
+      <div class="game-btn-time">9:00 PM ET</div>
+    </button>
+  </div>
 
-  <!-- BOARD PANEL -->
-  <div class="board-panel">
-    <div class="board-header">
-      <div>
-        <div class="board-title">Super Squares</div>
-        <div class="board-subtitle">
-          <span style="display:flex;align-items:center;gap:4px;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <span id="live-date">Loading...</span>
-          </span>
-          <span id="live-game-label" style="font-weight:700;color:var(--text);font-size:13px;margin-left:8px;"></span>
-          <span style="font-size:9px;font-weight:800;color:var(--green-light);background:rgba(22,163,74,0.15);border:1px solid rgba(22,163,74,0.3);padding:2px 6px;border-radius:4px;margin-left:6px;letter-spacing:0.05em;">🤖 AGENT SELECTED</span>
-        </div>
-      </div>
-      <div class="sport-controls">
-        <select class="sport-select" id="sportSelect" style="opacity:1;pointer-events:none;cursor:default;">
-          <option value="NBA">🏀 NBA</option>
-          <option value="NHL">🏒 NHL</option>
-          <option value="MLB">⚾ MLB</option>
-          <option value="NFL">🏈 NFL</option>
-          <option value="MLS">⚽ MLS</option>
-          <option value="WNBA">🏀 WNBA</option>
-          <option value="MM_MEN">🏀 March Madness (Men)</option>
-          <option value="MM_WOMEN">🏀 March Madness (Women)</option>
-        </select>
-        <div style="display:flex;align-items:center;gap:4px;">
-          <input type="date" id="gameDate" class="game-select" style="min-width:130px;color-scheme:dark;opacity:1;pointer-events:none;cursor:default;" />
-        </div>
-        <select class="game-select" id="gameSelect" style="opacity:1;pointer-events:none;cursor:default;">
-          <!-- populated by JS -->
-        </select>
-      </div>
-          <!-- populated by JS -->
-        </select>
+  <!-- MAIN BOARD -->
+  <div class="main">
+    <div id="boardWrap" class="board-wrap">
+      <div class="empty-state">
+        <div class="big">🏈</div>
+        <p>Select a game to view the board</p>
       </div>
     </div>
-
-    <!-- Board Tabs -->
-    <div class="board-tabs" style="padding-top:16px;">
-      <button class="board-tab active">Board #1</button>
-      <button class="board-tab">Board #2 (FULL)</button>
-    </div>
-
-    <!-- Grid -->
-    <div class="grid-wrap">
-      <div class="grid-container" id="squaresGrid">
-        <!-- populated by JS -->
-      </div>
-    </div>
-
-    <!-- QUARTER TRACKER -->
-    <div id="qtrTracker" style="margin:12px 8px 0;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;display:none;">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
-        QUARTER TRACKER
-        <span id="qtrLiveScore" style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--yellow);letter-spacing:0;"></span>
-      </div>
-      <div style="overflow-x:auto;">
-        <table id="qtrTable" style="width:100%;border-collapse:collapse;font-size:12px;">
-          <thead>
-            <tr style="color:var(--text3);font-size:10px;font-weight:700;letter-spacing:.06em;">
-              <td style="padding:4px 6px;">QTR</td>
-              <td style="padding:4px 6px;text-align:center;" id="qtrAwayLabel">AWAY</td>
-              <td style="padding:4px 6px;text-align:center;" id="qtrHomeLabel">HOME</td>
-              <td style="padding:4px 6px;text-align:center;">WINNER</td>
-              <td style="padding:4px 6px;text-align:right;">PAYOUT</td>
-            </tr>
-          </thead>
-          <tbody id="qtrBody">
-            <tr><td colspan="5" style="color:var(--text3);padding:8px 6px;font-size:11px;">Waiting for game to start...</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div id="qtrHouseSummary" style="margin-top:10px;padding:8px;background:rgba(255,255,255,0.04);border-radius:8px;font-size:11px;color:var(--text3);display:none;"></div>
-    </div>
-
   </div>
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-
-    <!-- MAIN COMBINED CARD -->
-    <div class="main-card">
-
-      <!-- Header -->
-      <div class="card-header">
-        <div class="card-header-text">
-          <div class="card-header-title">PARLAY + SQUARES</div>
-          <div class="card-header-sub">Buy squares &amp; build your parlay</div>
-        </div>
-        <div class="available-badge">
-          <div class="available-num" id="availableCount">67</div>
-          <div class="available-label">Available</div>
-        </div>
+    <div class="card">
+      <div class="card-title">Claim Squares</div>
+      <div class="initials-row">
+        <input class="initials-input" id="initialsInput" maxlength="3" placeholder="ABC" oninput="this.value=this.value.toUpperCase()">
       </div>
-
-      <!-- Parlay Board -->
-      <div class="parlay-section">
-        <div class="section-label">
-          Parlay Board
-          <span class="status-dot status-live">Live · Q3 4:22</span>
-        </div>
-
-        <div class="odds-header-row">
-          <div class="odds-col-label">Spread</div>
-          <div class="odds-col-label">Total</div>
-          <div class="odds-col-label">Moneyline</div>
-        </div>
-
-        <div class="odds-grid">
-          <!-- Spread -->
-          <div class="odds-col">
-            <div class="odds-btn" onclick="toggleOdds(this, 'spread-away')">
-              <div class="odds-btn-label">Away +3.5</div>
-              <div class="odds-value">-110</div>
-            </div>
-            <div class="odds-btn selected" onclick="toggleOdds(this, 'spread-home')">
-              <div class="odds-btn-label">Home -3.5</div>
-              <div class="odds-value">-110</div>
-            </div>
-          </div>
-          <!-- Total -->
-          <div class="odds-col">
-            <div class="odds-btn" onclick="toggleOdds(this, 'total-over')">
-              <div class="odds-btn-label">Over 228.5</div>
-              <div class="odds-value">-110</div>
-            </div>
-            <div class="odds-btn" onclick="toggleOdds(this, 'total-under')">
-              <div class="odds-btn-label">Under 228.5</div>
-              <div class="odds-value">-110</div>
-            </div>
-          </div>
-          <!-- Moneyline -->
-          <div class="odds-col">
-            <div class="odds-btn selected" onclick="toggleOdds(this, 'ml-away')">
-              <div class="odds-btn-label">Away ML</div>
-              <div class="odds-value">-160</div>
-            </div>
-            <div class="odds-btn" onclick="toggleOdds(this, 'ml-home')">
-              <div class="odds-btn-label">Home ML</div>
-              <div class="odds-value">+140</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Build Parlay Button -->
-        <button style="width:100%;margin-top:10px;padding:8px;background:rgba(22,163,74,0.15);border:1px solid rgba(22,163,74,0.3);border-radius:8px;color:#86efac;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.15s;letter-spacing:0.05em;text-transform:uppercase;"
-          onmouseover="this.style.background='rgba(22,163,74,0.25)'"
-          onmouseout="this.style.background='rgba(22,163,74,0.15)'"
-        >Build Custom Parlay</button>
+      <div class="qty-row">
+        <button class="qty-btn active" onclick="setQty(1,this)">1</button>
+        <button class="qty-btn" onclick="setQty(2,this)">2</button>
+        <button class="qty-btn" onclick="setQty(5,this)">5</button>
+        <button class="qty-btn" onclick="setQty(10,this)">10</button>
       </div>
-
-      <!-- Selected Legs -->
-      <div class="legs-section">
-        <div class="legs-title">Selected Legs (2)</div>
-        <div class="leg-row">
-          <span class="leg-label">Spread · Home -3.5</span>
-          <span class="leg-odds">-110</span>
-        </div>
-        <div class="leg-row">
-          <span class="leg-label">Moneyline · Away ML</span>
-          <span class="leg-odds">-160</span>
-        </div>
-      </div>
-
-      <!-- Buy Squares -->
-      <div class="buy-section">
-        <div class="buy-meta">
-          <span class="buy-meta-label">Price per Square</span>
-          <select id="squarePrice" class="buy-meta-value" onchange="updatePriceDisplay(this.value)" style="background:#1a1a1a;border:1px solid #333;color:#22c55e;font-size:inherit;font-weight:700;padding:2px 8px;border-radius:6px;cursor:pointer;outline:none;"><option value="5">$5</option><option value="10" selected>$10</option><option value="15">$15</option><option value="20">$20</option><option value="25">$25</option><option value="30">$30</option><option value="40">$40</option><option value="50">$50</option><option value="75">$75</option><option value="100">$100</option><option value="150">$150</option><option value="200">$200</option></select>
-        </div>
-
-        <!-- Qty -->
-        <div class="qty-grid">
-          <button class="qty-btn" onclick="setQty(1, this)">1</button>
-          <button class="qty-btn" onclick="setQty(2, this)">2</button>
-          <button class="qty-btn active" onclick="setQty(5, this)">5</button>
-          <button class="qty-btn" onclick="setQty(10, this)">10</button>
-          <button class="qty-btn" onclick="setQty(20, this)">20</button>
-        </div>
-
-        <!-- Total -->
-        <div class="total-row">
-          <div class="total-left">
-            <div class="total-label">Total Due</div>
-            <div class="total-amount" id="totalAmount">$50.00</div>
-          </div>
-          <div class="total-right">
-            <div class="total-squares" id="totalSquares">5 Squares</div>
-            <div class="total-legs">+ 2 Parlay Legs</div>
-          </div>
-        </div>
-
-        <!-- Pay Willie -->
-        <div class="pay-label">Pay Willie</div>
-        <div class="pay-grid">
-          <div class="pay-card pay-cashapp" style="cursor:default;">
-            <div class="pay-icon pay-icon-cashapp">$</div>
-            <div class="pay-info">
-              <div class="pay-name">Cash App</div>
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://cash.app/%24MDdisc" alt="Cash App QR" style="width:70px;height:70px;border-radius:6px;margin-top:4px;display:block;" />
-            </div>
-          </div>
-          <div class="pay-card pay-paypal" style="cursor:default;">
-            <div class="pay-icon pay-icon-paypal">P</div>
-            <div class="pay-info">
-              <div class="pay-name">PayPal</div>
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://paypal.me/williemayes" alt="PayPal QR" style="width:70px;height:70px;border-radius:6px;margin-top:4px;display:block;" />
-            </div>
-          </div>
-        </div>
-
-        <!-- CTA -->
-        <button class="cta-btn" onclick="openPayModal()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          BUY 5 SQUARES NOW
-        </button>
-        <div class="cta-sub">Squares assigned randomly after payment verified</div>
-      </div>
+      <button class="buy-btn" onclick="claimSquares()" id="buyBtn">BUY SQUARES</button>
     </div>
 
-    <!-- LEGEND -->
-    <div class="legend-card">
-      <div class="legend-title" style="display:flex;justify-content:space-between;align-items:center;">
-        Legend
-        <button onclick="localStorage.clear();_cache={};alert('Local data cleared! Refreshing...');location.reload();" style="background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:9px;padding:3px 8px;border-radius:4px;cursor:pointer;">Clear My Data</button>
-      </div>
-      <div class="legend-items">
-        <div class="legend-item">
-          <div class="legend-dot" style="background:#16a34a;border:1px solid #22c55e;"></div>
-          Yours
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot" style="background:#222;border:1px solid #333;"></div>
-          Sold
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot" style="background:#111;border:1px solid #2a2a2a;"></div>
-          Open
-        </div>
-      </div>
+    <div class="card" id="oddsCard" style="display:none;">
+      <div class="card-title">Odds</div>
+      <div id="oddsContent"></div>
     </div>
 
-    <!-- TODAY'S GAMES -->
-    <div class="games-card">
-      <div class="games-card-header">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        Today's Games
+    <div class="card">
+      <div class="card-title">Admin</div>
+      <div class="admin-section">
+        <button class="admin-btn admin-btn-green" onclick="lockNumbers()">🔒 Lock Numbers to Board</button>
+        <button class="admin-btn" onclick="forceRefresh()">↻ Force Refresh Board</button>
+        <button class="admin-btn admin-btn-red" onclick="resetBoard()">⚠ Reset Board (Clear All)</button>
       </div>
-      <div class="games-list" id="gamesList">
-        <!-- populated by JS -->
-      </div>
-    </div>
-
-    <!-- ADMIN ZONE -->
-    <div class="admin-card">
-      <div class="admin-title">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        Admin Zone
-      </div>
-      <div class="admin-btns">
-        <button class="admin-btn admin-btn-blue" onclick="lockNumbers(currentGame)">Lock Numbers to This Board</button>
-        <button class="admin-btn admin-btn-blue" onclick="_cache={};if(!currentGame){location.reload();}else{buildTicker().catch(function(){});buildGrid(currentGame);}">↻ Force Refresh Scores</button>
-        <button class="admin-btn admin-btn-green" onclick="alert('New board version coming soon!')">+ New Board Version</button>
-        <button class="admin-btn admin-btn-red" onclick="adminReset();">⨂ Reset Board</button>
-      </div>
-    </div>
-
-    <!-- PLAYER PROPS -->
-    <div class="admin-card" style="margin-top:12px;">
-      <div class="admin-title" style="display:flex;justify-content:space-between;align-items:center;">
-        <span>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          Player Props — Over/Under
-        </span>
-        <div style="display:flex;gap:4px;">
-          <button class="admin-btn admin-btn-green" style="margin:0;padding:4px 10px;font-size:10px;" onclick="togglePropsSetup()">+ Add Player</button>
-          <button class="admin-btn admin-btn-red" style="margin:0;padding:4px 10px;font-size:10px;" onclick="resetProps()">Reset Props</button>
-        </div>
-      </div>
-
-      <!-- Props Setup Form (hidden by default) -->
-      <div id="propsSetupForm" style="display:none;padding:12px;background:var(--surface2);border-radius:8px;margin:10px 12px;">
-        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;">Add Player Props Board</div>
-        <input id="propsPlayerName" type="text" placeholder="Player Name (e.g. LeBron James)" style="width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text);font-size:12px;margin-bottom:6px;outline:none;" />
-        <select id="propsPlayerSide" style="width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text);font-size:12px;margin-bottom:6px;outline:none;cursor:pointer;">
-          <option value="home">Home Team Player</option>
-          <option value="away">Away Team Player</option>
-          <option value="player3">Player 3</option>
-          <option value="player4">Player 4</option>
-          <option value="player5">Player 5</option>
-          <option value="player6">Player 6</option>
-        </select>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
-          <select id="propsPrice" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;cursor:pointer;">
-            <option value="5">$5 per square</option>
-            <option value="10">$10 per square</option>
-            <option value="15">$15 per square</option>
-            <option value="20">$20 per square</option>
-            <option value="25">$25 per square</option>
-            <option value="50">$50 per square</option>
-            <option value="100">$100 per square</option>
-          </select>
-          <input id="propsPin" type="password" placeholder="Admin PIN" style="background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text);font-size:12px;outline:none;" />
-        </div>
-        <button onclick="addPlayerProp()" style="width:100%;background:var(--green);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;padding:10px;cursor:pointer;">Create Props Board for This Player</button>
-      </div>
-
-      <!-- Props Boards Container -->
-      <div id="propsBoardsContainer" style="padding:8px 12px;">
-        <div style="text-align:center;color:#444;font-size:12px;padding:20px 0">No props set up yet.<br>Click + Add Player to create a board.</div>
-      </div>
-    </div>
-
-  </div>
-</div>
-</div>
-
-<!-- PAYMENT MODAL -->
-<div class="modal-overlay" id="payModal">
-  <div class="modal" style="position:relative;">
-    <button class="modal-close" onclick="document.getElementById('payModal').classList.remove('open')">✕</button>
-    <div class="modal-header">
-      <div class="modal-icon">💵</div>
-      <div class="modal-title">Payment Method</div>
-      <div class="modal-sub">Select how you want to pay for your squares.</div>
-    </div>
-    <div class="modal-body">
-      <div class="modal-total">
-        <span class="modal-total-label" id="modalSquaresLabel">5 Squares × $10</span>
-        <span class="modal-total-amount" id="modalTotal">$50.00</span>
-      </div>
-      <div class="modal-input-label">Your Initials (3 letters)</div>
-      <input type="text" maxlength="3" placeholder="ABC" class="modal-input" id="initialsInput" oninput="checkInitials()" />
-      <div class="modal-pay-grid">
-        <div class="modal-pay-option selected" id="payOpt-cashapp" onclick="selectPay(this,'cashapp')">
-          <div class="modal-pay-icon" style="background:#00D632;">$</div>
-          <div class="modal-pay-name">Cash App</div>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=https://cash.app/%24MDdisc" alt="QR" style="width:50px;height:50px;border-radius:4px;margin-top:4px;" />
-        </div>
-        <div class="modal-pay-option" id="payOpt-paypal" onclick="selectPay(this,'paypal')">
-          <div class="modal-pay-icon" style="background:#0070ba;font-style:italic;font-size:13px;">P</div>
-          <div class="modal-pay-name">PayPal</div>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=https://paypal.me/williemayes" alt="QR" style="width:50px;height:50px;border-radius:4px;margin-top:4px;" />
-        </div>
-        <div class="modal-pay-option" id="payOpt-card" onclick="selectPay(this,'card')">
-          <div class="modal-pay-icon" style="background:#6366f1;">💳</div>
-          <div class="modal-pay-name">Card</div>
-          <div style="font-size:9px;color:#aaa;margin-top:4px;">Stripe checkout</div>
-        </div>
-      </div>
-      <div id="payInstructions" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;margin:10px 0;font-size:12px;color:var(--text2);"></div>
-      <button class="modal-cta" id="confirmBtn" disabled onclick="confirmPurchase()">
-        📲 Reserve My Squares
-      </button>
     </div>
   </div>
 </div>
 
 <!-- CONFIRM MODAL -->
 <div class="modal-overlay" id="confirmModal">
-  <div class="modal" style="position:relative;">
-    <button class="modal-close" onclick="closeConfirm()">✕</button>
-    <div class="confirm-modal">
-      <div class="confirm-icon">✓</div>
-      <div class="confirm-title">SQUARES SECURED!</div>
-      <div class="confirm-msg" id="confirmMsg">1 square × $10 = <strong style="color:white;">$10.00</strong></div>
+  <div class="modal">
+    <h3 id="modalTitle">Confirm Purchase</h3>
+    <p id="modalBody">Are you sure?</p>
+    <div class="modal-btns">
+      <button class="modal-btn" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn modal-btn-primary" onclick="confirmClaim()">Confirm</button>
     </div>
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-// ── ERROR HANDLING ──────────────────────────────────────────────
-function logStatus(msg, isError) {
-  const el = document.getElementById('statusBar');
-  if (el) {
-    el.textContent = (new Date()).toLocaleTimeString() + ' | ' + msg;
-    el.style.color = isError ? '#ef4444' : '#22c55e';
-  }
-  if (isError) console.error('[ParlayPro]', msg);
-  else console.log('[ParlayPro]', msg);
-}
+// ── CONFIG ───────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://pmbzffdgbtyxbnrtjehq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtYnpmZmRnYnR5eGJucnRqZWhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwOTMwOTUsImV4cCI6MjA4ODY2OTA5NX0.RfX46ZB5f0vhxo2_P7tGuM_-yyf6yM80gp6YYUJ0S9U';
+const ADMIN_PIN = '2826';
 
-window.onerror = function(msg, src, line, col, err) {
-  logStatus('JS Error: ' + msg + ' (line ' + line + ')', true);
-  return false;
+// ── GAME DATA ────────────────────────────────────────────────────────────────
+const GAMES = {
+  'phi-cle': { away:'76ers', home:'Cavaliers', time:'7:00 PM ET', sport:'NBA' },
+  'den-okc': { away:'Nuggets', home:'Thunder', time:'7:30 PM ET', sport:'NBA' },
+  'mem-bkn': { away:'Grizzlies', home:'Nets', time:'7:30 PM ET', sport:'NBA' },
+  'gsw-uta': { away:'Warriors', home:'Jazz', time:'9:00 PM ET', sport:'NBA' },
+  'nyk-lac': { away:'Knicks', home:'Clippers', time:'9:30 PM ET', sport:'NBA' },
+  'lak-cbj': { away:'Kings', home:'Blue Jackets', time:'3:00 PM ET', sport:'NHL' },
+  'cgy-wsh': { away:'Flames', home:'Capitals', time:'6:00 PM ET', sport:'NHL' },
+  'nyr-phi': { away:'Rangers', home:'Flyers', time:'6:00 PM ET', sport:'NHL' },
+  'col-chi': { away:'Mammoth', home:'Blackhawks', time:'7:30 PM ET', sport:'NHL' },
+  'ott-van': { away:'Senators', home:'Canucks', time:'9:00 PM ET', sport:'NHL' }
 };
 
-window.addEventListener('unhandledrejection', function(e) {
-  logStatus('Async Error: ' + (e.reason?.message || e.reason || 'Unknown'), true);
-});
+// ── STATE ────────────────────────────────────────────────────────────────────
+let currentGameId = null;
+let currentData = null;
+let claimQty = 1;
+let pendingIndices = [];
+let pollTimer = null;
 
-// ── STATE ────────────────────────────────────────────────────────
-const SPORT_MAP = {
-  'NBA': 'nba', 'NHL': 'nhl', 'MLB': 'mlb', 'NFL': 'nfl',
-  'MLS': 'mls', 'WNBA': 'wnba',
-  'MM_MEN': 'ncaam', 'MM_WOMEN': 'ncaaw'
-};
-
-let currentSport = 'NBA';
-let currentGame = null;
-let currentDate = (function() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return y + '-' + m + '-' + d;
-})(); // YYYY-MM-DD local time
-let currentQty = 5;
-let currentBoardVersion = null;
-let espnGames = {}; // { sport: [games...] }
-let _cache = {}; // { gameId: serverData }
-
-const INITIALS = ['WM','KJ','DT','AA','RB','LM','CP','JS','MB','TW','GH','PD','NT','BK','SC','FO','YI','QV','ZX','ER'];
-
-// ── DATE HELPERS ──────────────────────────────────────────────
-function initDatePicker() {
-  const picker = document.getElementById('gameDate');
-  if (!picker) return;
-  const today = new Date();
-  const maxDate = new Date(today);
-  maxDate.setDate(maxDate.getDate() + 14); // 2 weeks out
-  picker.value = currentDate;
-  // Allow up to 30 days back so admin can review past boards
-  const minDate = new Date(today);
-  minDate.setDate(minDate.getDate() - 30);
-  picker.min = minDate.toISOString().slice(0, 10);
-  picker.max = maxDate.toISOString().slice(0, 10);
+// ── SUPABASE HELPERS ─────────────────────────────────────────────────────────
+async function sbGet(gameId) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/squares?game_id=eq.${gameId}&select=*`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  const rows = await res.json();
+  return rows && rows.length > 0 ? rows[0] : null;
 }
 
-function changeDate(offset) {
-  const d = new Date(currentDate + 'T12:00:00');
-  d.setDate(d.getDate() + offset);
-  const minDate = new Date();
-  minDate.setDate(minDate.getDate() - 30);
-  const maxDate = new Date();
-  maxDate.setDate(maxDate.getDate() + 14);
-  minDate.setHours(0,0,0,0);
-  maxDate.setHours(23,59,59,999);
-  if (d < minDate || d > maxDate) return;
-  currentDate = d.toISOString().slice(0, 10);
-  document.getElementById('gameDate').value = currentDate;
-  updateSport(currentSport);
+async function sbUpsert(row) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/squares?on_conflict=game_id`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates'
+    },
+    body: JSON.stringify(row)
+  });
+  return res.ok;
 }
 
-function updateDateFromPicker(val) {
-  currentDate = val;
-  updateSport(currentSport);
-}
-
-function getEspnDateParam() {
-  return currentDate.replace(/-/g, ''); // YYYYMMDD format for ESPN
-}
-
-// ── ESPN API: Fetch real live data ────────────────────────────
-async function fetchEspnScores(sport) {
-  try {
-    const dateStr = getEspnDateParam();
-    logStatus('Fetching ' + sport + ' for ' + currentDate + '...', false);
-    const apiSport = SPORT_MAP[sport] || sport.toLowerCase();
-
-    // ESPN direct first — freshest live data, no caching
-    const espnLeagueMap = {
-      'nba': 'basketball/nba', 'nhl': 'hockey/nhl', 'mlb': 'baseball/mlb',
-      'nfl': 'football/nfl', 'mls': 'soccer/usa.1', 'wnba': 'basketball/wnba',
-      'ncaam': 'basketball/mens-college-basketball', 'ncaaw': 'basketball/womens-college-basketball'
-    };
-    const league = espnLeagueMap[apiSport] || 'basketball/nba';
-    const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/${league}/scoreboard?dates=${dateStr}&_=${Date.now()}`;
-    try {
-      const espnRes = await fetch(espnUrl);
-      if (espnRes.ok) {
-        const espnData = await espnRes.json();
-        const events = espnData.events || [];
-        const games = events.map(ev => {
-          const comp = ev.competitions && ev.competitions[0];
-          const comps = comp && comp.competitors;
-          const away = comps && comps.find(c => c.homeAway === 'away');
-          const home = comps && comps.find(c => c.homeAway === 'home');
-          const status = ev.status && ev.status.type;
-          const isLive = status && status.state === 'in';
-          const isFinal = status && status.completed;
-          return {
-            id: ev.id,
-            away: (away && away.team && away.team.abbreviation) || 'AWAY',
-            home: (home && home.team && home.team.abbreviation) || 'HOME',
-            awayScore: away && parseInt(away.score) || 0,
-            homeScore: home && parseInt(home.score) || 0,
-            status: isFinal ? 'FINAL' : isLive ? 'LIVE' : 'UPCOMING',
-            time: (ev.status && ev.status.type && ev.status.type.shortDetail) || 'TBD',
-            period: (comp && comp.status && comp.status.period) || 0
-          };
-        });
-        if (games.length > 0) {
-          logStatus(sport + ': ' + games.length + ' games (ESPN live)', false);
-          espnGames[sport] = games;
-          return { games };
-        }
-      }
-    } catch(e1) {
-      logStatus('ESPN direct failed: ' + e1.message + ', trying Netlify...', true);
-    }
-
-    // Fallback: Netlify function
-    try {
-      const res = await fetch(`/api/scores?sport=${encodeURIComponent(apiSport)}&date=${dateStr}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.games && data.games.length > 0) {
-          logStatus(sport + ': ' + data.games.length + ' games (Netlify)', false);
-          espnGames[sport] = data.games;
-          return data;
-        }
-      }
-    } catch(e2) {
-      logStatus('Netlify fallback failed: ' + e2.message, true);
-    }
-
-    logStatus('No games found for ' + sport, true);
-    return null;
-  } catch (e) {
-    logStatus('ESPN fetch failed: ' + e.message, true);
-    return null;
-  }
-}
-
-// ── TICKER ───────────────────────────────────────────────────────
-async function buildTicker() {
-  const allSports = ['NBA', 'NHL', 'MLB', 'NFL', 'MLS'];
-  let allGames = [];
-  for (const sport of allSports) {
-    const data = await fetchEspnScores(sport);
-    if (data && data.games) allGames = allGames.concat(data.games);
-  }
-
-  if (!allGames.length) {
-    const wrap = document.querySelector('.ticker-inner');
-    if (wrap) wrap.innerHTML = '<div class="ticker-item">Loading live scores...</div>';
-    return;
-  }
-
-  const wrap = document.querySelector('.ticker-inner');
-  if (!wrap) return;
-
-  wrap.innerHTML = allGames.map(g => {
-    const isLive = g.status === 'LIVE';
-    const scorePart = isLive ? `${g.awayScore} – ${g.homeScore}` : g.time;
-    const badge = isLive ? '<span class="ticker-badge badge-live">LIVE</span>' :
-                  g.status === 'FINAL' ? '<span class="ticker-badge badge-final">FINAL</span>' :
-                  '<span class="ticker-badge badge-upcoming">TODAY</span>';
-    return `<div class="ticker-item">
-      ${badge}
-      <span style="color:var(--text2);">${g.away}</span>
-      <span class="ticker-score">${scorePart}</span>
-      <span style="color:var(--text2);">${g.home}</span>
-      ${isLive ? '<span class="status-dot status-live" style="font-size:8px;margin-left:4px;">●</span>' : ''}
-    </div>`;
-  }).join('');
-  wrap.innerHTML += wrap.innerHTML;
-}
-
-// ── GRID ─────────────────────────────────────────────────────
-// Seeded shuffle — same game ID always produces same number order on every device
-function seededShuffle(arr, seed) {
+// ── SHUFFLE ──────────────────────────────────────────────────────────────────
+function shuffle(arr) {
   const a = [...arr];
-  // Simple hash from string to number
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) {
-    h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
-  }
-  function nextRand() {
-    h = (h * 1664525 + 1013904223) | 0;
-    return (h >>> 0) / 4294967296;
-  }
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(nextRand() * (i + 1));
+    const j = Math.floor(Math.random() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
 }
 
-async function buildGrid(game) {
-  if (!game) return;
+// ── SELECT GAME ──────────────────────────────────────────────────────────────
+async function selectGame(gameId) {
+  currentGameId = gameId;
 
-  const serverData = await fetchSquares(game.id);
-  const serverOwners = serverData.owners || {};
-  const serverSold = new Set(Object.keys(serverOwners).map(Number));
-
-  const _locked = serverData && serverData.numbersLocked && serverData.rowNums && serverData.rowNums.length===10;
-  const topNums = _locked ? serverData.rowNums : seededShuffle([0,1,2,3,4,5,6,7,8,9], 'top-' + game.id);
-  const leftNums = _locked ? serverData.colNums : seededShuffle([0,1,2,3,4,5,6,7,8,9], 'left-' + game.id);
-
-  // Self-heal: remove local squares that aren't on the server anymore (board was reset)
-  const mine = getMySquares(game.id);
-  if (mine.size > 0 && Object.keys(serverOwners).length === 0) {
-    // Server is empty but local thinks we have squares — board was reset
-    localStorage.removeItem('my_' + game.id);
-    localStorage.removeItem('initials_' + game.id);
-    mine.clear();
-  } else if (mine.size > 0) {
-    // Remove any local squares not on server
-    const myInitials = getInitialsForGame(game.id);
-    let changed = false;
-    mine.forEach(idx => {
-      if (!serverOwners[idx] || (myInitials && serverOwners[idx] !== myInitials.toUpperCase())) {
-        mine.delete(idx);
-        changed = true;
-      }
-    });
-    if (changed) {
-      localStorage.setItem('my_' + game.id, JSON.stringify([...mine]));
-    }
-  }
-
-  (game.mine || []).forEach(i => mine.add(i));
-  const myInitials = getInitialsForGame(game.id) || 'YOU';
-  const sold = new Set([...(game.sold || []), ...serverSold]);
-  const available = Math.max(0, 100 - sold.size);
-
-  document.getElementById('availableCount').textContent = available;
-
-  let html = '';
-  html += `<div class="axis-header axis-corner" style="font-size:9px;color:var(--text3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;text-align:center;">
-    <span style="font-weight:700;color:var(--text2);">${game.away}</span>
-    ${game.status==='LIVE'?`<span style="color:var(--yellow);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;">${game.awayScore||0}</span>`:''}
-  </div>`;
-
-  html += `<div class="team-banner">${game.home}${game.status==='LIVE'?` &nbsp; <span style="color:var(--yellow)">${game.homeScore||0}</span>`:''}</div>`;
-
-  html += `<div class="axis-header axis-corner" style="font-size:9px;color:var(--text3);"></div>`;
-  topNums.forEach(num => {
-    html += `<div class="axis-header axis-top">${num}</div>`;
+  // Update active button
+  document.querySelectorAll('.game-btn').forEach(b => b.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  // fallback - find by onclick
+  document.querySelectorAll('.game-btn').forEach(b => {
+    if (b.getAttribute('onclick') === `selectGame('${gameId}')`) b.classList.add('active');
   });
 
-  for (let i = 0; i < 10; i++) {
-    html += `<div class="axis-header axis-left">${leftNums[i]}</div>`;
-    for (let j = 0; j < 10; j++) {
-      const idx = i * 10 + j;
-      const isMine = mine.has(idx);
-      const isSold = sold.has(idx);
-      const owner = serverOwners[idx] || (isMine ? myInitials : null);
-      const cellClass = isMine ? 'cell-mine' : isSold ? 'cell-sold' : 'cell-open';
-      html += `<div class="cell ${cellClass}" data-idx="${idx}">${owner || ''}</div>`;
-    }
-  }
+  // Stop old poll
+  if (pollTimer) clearInterval(pollTimer);
 
-  document.getElementById('squaresGrid').innerHTML = html;
+  // Show loading
+  document.getElementById('boardWrap').innerHTML = '<div class="empty-state"><div class="big">⏳</div><p>Loading board...</p></div>';
 
-  // Update quarter tracker
-  updateQtrTracker(game, serverData).catch(function(){});
+  await buildBoard(gameId);
+
+  // Start poll every 8s
+  pollTimer = setInterval(() => refreshBoard(gameId), 8000);
 }
 
-// ── ODDS BUILDER ─────────────────────────────────────────────
-function buildOdds(game) {
+// ── BUILD BOARD ───────────────────────────────────────────────────────────────
+async function buildBoard(gameId) {
+  const game = GAMES[gameId];
   if (!game) return;
-}
 
-// ── BOARD HEADER ─────────────────────────────────────────────
-function updateBoardHeader(game) {
-  if (!game) return;
-  const d = new Date(currentDate + 'T12:00:00');
-  document.getElementById('live-date').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  const gameLabel = document.getElementById('live-game-label');
-  if (gameLabel && game.away && game.home) {
-    const statusBadge = game.status === 'LIVE'
-      ? '<span style="background:var(--red);color:white;font-size:9px;font-weight:800;padding:2px 5px;border-radius:3px;margin-left:6px;animation:pulse 1s infinite;">LIVE</span>'
-      : game.status === 'FINAL'
-      ? '<span style="background:#3f3f3f;color:#aaa;font-size:9px;font-weight:800;padding:2px 5px;border-radius:3px;margin-left:6px;">FINAL</span>'
-      : '';
-    gameLabel.innerHTML = game.away + ' @ ' + game.home + statusBadge;
-  }
-}
+  // Fetch from Supabase
+  let row = await sbGet(gameId);
+  currentData = row;
 
-// ── SERVER SYNC ──────────────────────────────────────────────
-async function fetchSquares(gameId) {
-  try {
-    logStatus('Loading squares for game ' + gameId + '...', false);
-    const res = await fetch(`/api/squares?gameId=${encodeURIComponent(gameId)}`);
-    if (!res.ok) {
-      logStatus('Squares API error: HTTP ' + res.status + ' for game ' + gameId, true);
-      return _cache[gameId] || { owners: {} };
-    }
-    const data = await res.json();
-    _cache[gameId] = data || { owners: {} };
-    const ownCount = Object.keys((_cache[gameId].owners || {})).length;
-    logStatus('Game ' + gameId + ': ' + ownCount + ' squares claimed', false);
-    return _cache[gameId];
-  } catch (e) {
-    logStatus('Fetch squares failed: ' + e.message, true);
-    return _cache[gameId] || { owners: {} };
-  }
-}
+  const owners = row ? (row.owners || {}) : {};
+  const locked = row && row.numbers_locked && row.row_nums && row.row_nums.length === 10;
+  const rowNums = locked ? row.row_nums : shuffle([0,1,2,3,4,5,6,7,8,9]);
+  const colNums = locked ? row.col_nums : shuffle([0,1,2,3,4,5,6,7,8,9]);
 
-function getMySquares(gameId) {
-  const key = `my_${gameId}`;
-  const stored = localStorage.getItem(key);
-  return new Set(stored ? JSON.parse(stored) : []);
-}
+  const myKey = `mySquares_${gameId}`;
+  const mySquares = new Set(JSON.parse(localStorage.getItem(myKey) || '[]'));
+  const myInitials = localStorage.getItem(`initials_${gameId}`) || '';
 
-function getInitialsForGame(gameId) {
-  return localStorage.getItem(`initials_${gameId}`);
-}
+  const soldCount = Object.keys(owners).length;
+  const available = 100 - soldCount;
 
-async function persistSquares(gameId, indices, initials) {
-  logStatus('Claiming ' + indices.length + ' squares as ' + initials + '...', false);
-  const res = await fetch('/api/claim-square', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ gameId, indices, initials })
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    logStatus('Claim failed: ' + (err.error || 'HTTP ' + res.status), true);
-    throw new Error(err.error || 'Failed to persist squares');
-  }
-  logStatus('Claimed ' + indices.length + ' squares as ' + initials + ' ✓', false);
-  localStorage.setItem(`my_${gameId}`, JSON.stringify(indices));
-  localStorage.setItem(`initials_${gameId}`, initials);
-  _cache[gameId] = null;
-}
-
-// ── SIDEBAR GAMES LIST ───────────────────────────────────────
-function buildGamesList(sport) {
-  const games = espnGames[sport] || [];
-  const list = document.querySelector('.games-list');
-  if (!list) return;
-
-  list.innerHTML = games.map(g => `
-    <div class="game-row${g.id === (currentGame?.id) ? ' active' : ''}" data-id="${g.id}" onclick="selectGameById('${g.id}')">
-      <div class="game-row-top">
-        <span class="game-teams">${g.away} @ ${g.home}</span>
-        ${g.status==='LIVE'
-          ? `<span class="status-dot status-live" style="font-size:8px;">Live</span>`
-          : `<span class="status-dot status-scheduled" style="font-size:8px;">${g.time || g.period || ''}</span>`}
+  // Build HTML
+  let html = `
+    <div class="board-header">
+      <div>
+        <div class="board-title">${game.away} @ ${game.home}</div>
+        <div class="board-meta">${game.sport} · ${game.time}${locked ? ' · 🔒 Numbers Locked' : ''}</div>
       </div>
-      ${g.status==='LIVE' ? `<div class="game-score" style="margin-top:4px;">${g.awayScore||0} – ${g.homeScore||0}</div>` : ''}
-    </div>`).join('');
-}
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="avail-badge"><span>${available}</span> / 100 available</div>
+      </div>
+    </div>
+    <div class="grid-wrap">
+      <div class="squares-grid">
+        <div class="axis-corner"></div>
+        <div class="team-banner" style="grid-column:2/12;">${game.home}</div>
+        <div class="axis-corner"></div>`;
 
-// ── GAME SELECT DROPDOWN ─────────────────────────────────────
-function populateGameDropdown(sport) {
-  const games = espnGames[sport] || [];
-  const sel = document.getElementById('gameSelect');
-  sel.innerHTML = games.map(g =>
-    `<option value="${g.id}">${g.status==='LIVE'?'● ':''}${g.away} @ ${g.home}</option>`
-  ).join('');
-}
+  rowNums.forEach(n => { html += `<div class="axis-top">${n}</div>`; });
 
-// ── LOAD GAME ────────────────────────────────────────────────
-async function loadGame(game) {
-  if (!game) { logStatus('loadGame called with no game', true); return; }
-  logStatus('Loading game: ' + game.away + ' @ ' + game.home + ' (ID: ' + game.id + ')', false);
-  currentGame = game;
-  try {
-    await buildGrid(game);
-  } catch (e) {
-    logStatus('buildGrid error: ' + e.message, true);
-  }
-
-  if (window._pollTimer) clearInterval(window._pollTimer);
-  window._pollTimer = setInterval(async function() {
-    if (currentGame && currentGame.id === game.id) {
-      try { await buildGrid(currentGame); } catch (e) { logStatus('Poll error: ' + e.message, true); }
+  for (let r = 0; r < 10; r++) {
+    html += `<div class="axis-left">${colNums[r]}</div>`;
+    for (let c = 0; c < 10; c++) {
+      const idx = r * 10 + c;
+      if (mySquares.has(idx)) {
+        html += `<div class="cell cell-mine" data-idx="${idx}">${myInitials || 'YOU'}</div>`;
+      } else if (owners[idx] !== undefined) {
+        html += `<div class="cell cell-sold" data-idx="${idx}">${owners[idx]}</div>`;
+      } else {
+        html += `<div class="cell cell-open" data-idx="${idx}" onclick="selectCell(${idx})"></div>`;
+      }
     }
-  }, 15000);
+  }
 
-  buildOdds(game);
-  updateBoardHeader(game);
-  updateCTA();
+  html += '</div></div>';
 
-  document.getElementById('gameSelect').value = game.id;
+  document.getElementById('boardWrap').innerHTML = html;
 
-  document.querySelectorAll('.game-row').forEach(row => {
-    row.classList.toggle('active', row.dataset.id === game.id);
+  // Show odds card
+  document.getElementById('oddsCard').style.display = 'block';
+  document.getElementById('oddsContent').innerHTML = `
+    <div style="font-size:12px;color:var(--text2);">Board #1 — ${available} squares open</div>
+  `;
+}
+
+// ── REFRESH BOARD (poll) ──────────────────────────────────────────────────────
+async function refreshBoard(gameId) {
+  if (currentGameId !== gameId) return;
+  const row = await sbGet(gameId);
+  if (!row) return;
+  const owners = row.owners || {};
+  // Update only sold cells without full re-render
+  document.querySelectorAll('.cell').forEach(cell => {
+    const idx = parseInt(cell.dataset.idx);
+    if (isNaN(idx)) return;
+    if (cell.classList.contains('cell-mine')) return;
+    if (owners[idx] !== undefined) {
+      if (!cell.classList.contains('cell-sold')) {
+        cell.className = 'cell cell-sold';
+        cell.textContent = owners[idx];
+        cell.onclick = null;
+      }
+    } else {
+      if (cell.classList.contains('cell-sold')) {
+        cell.className = 'cell cell-open';
+        cell.textContent = '';
+        cell.onclick = () => selectCell(idx);
+      }
+    }
   });
+  currentData = row;
 }
 
-// ── EVENT HANDLERS ───────────────────────────────────────────
-// Fallback dummy game so grid always renders even when ESPN API is down
-function getFallbackGame(sport) {
-  const fallbacks = {
-    'NBA': { id: 'fallback-nba-' + currentDate, away: 'AWAY', home: 'HOME', awayScore: 0, homeScore: 0, status: 'UPCOMING', time: 'TBD', period: 0 },
-    'NHL': { id: 'fallback-nhl-' + currentDate, away: 'AWAY', home: 'HOME', awayScore: 0, homeScore: 0, status: 'UPCOMING', time: 'TBD', period: 0 },
-    'MLB': { id: 'fallback-mlb-' + currentDate, away: 'AWAY', home: 'HOME', awayScore: 0, homeScore: 0, status: 'UPCOMING', time: 'TBD', period: 0 },
-    'NFL': { id: 'fallback-nfl-' + currentDate, away: 'AWAY', home: 'HOME', awayScore: 0, homeScore: 0, status: 'UPCOMING', time: 'TBD', period: 0 },
-  };
-  return fallbacks[sport] || fallbacks['NBA'];
+// ── FORCE REFRESH ─────────────────────────────────────────────────────────────
+async function forceRefresh() {
+  if (!currentGameId) { showToast('Select a game first', true); return; }
+  await buildBoard(currentGameId);
+  showToast('Board refreshed!');
 }
 
-// ── AI AGENT: Pick best game to display ──────────────────────
-function pickBestGame(games) {
-  if (!games || !games.length) return null;
-  // Priority: 1) LIVE games, 2) highest scoring, 3) upcoming soonest
-  const live = games.filter(g => g.status === 'LIVE');
-  if (live.length) {
-    // Pick live game with highest combined score (most exciting)
-    return live.sort((a, b) => (parseInt(b.awayScore) + parseInt(b.homeScore)) - (parseInt(a.awayScore) + parseInt(a.homeScore)))[0];
-  }
-  const upcoming = games.filter(g => g.status === 'UPCOMING' || g.status === 'SCHEDULED');
-  if (upcoming.length) return upcoming[0];
-  return games[0];
-}
-
-// ── TOP GAMES FILTER: Only show marquee matchups ──────────────
-function filterTopGames(games) {
-  if (!games || !games.length) return games;
-  // Show live games first, then upcoming — max 6
-  const live = games.filter(g => g.status === 'LIVE');
-  const upcoming = games.filter(g => g.status !== 'LIVE' && g.status !== 'FINAL');
-  const finals = games.filter(g => g.status === 'FINAL').slice(0, 2);
-  return [...live, ...upcoming, ...finals].slice(0, 6);
-}
-
-async function updateSport(sport) {
-  logStatus('Switching to ' + sport + '...', false);
-  currentSport = sport;
-  // Update the visible selector to show current sport
-  var sportEl = document.getElementById('sportSelect');
-  if (sportEl) sportEl.value = sport;
-
-  const grid = document.getElementById('squaresGrid');
-  if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);font-size:13px;">Loading games...</div>';
-
-  const data = await fetchEspnScores(sport);
-  if (!data || !data.games || !data.games.length) {
-    const fallback = getFallbackGame(sport);
-    espnGames[sport] = [fallback];
-    populateGameDropdown(sport);
-    buildGamesList(sport);
-    await loadGame(fallback);
-    return;
-  }
-
-  // Filter to top games only
-  const topGames = filterTopGames(data.games);
-  espnGames[sport] = topGames;
-
-  populateGameDropdown(sport);
-  buildGamesList(sport);
-
-  // AI agent picks best game
-  const bestGame = pickBestGame(topGames);
-  logStatus('Agent selected: ' + bestGame.away + ' @ ' + bestGame.home + ' (' + bestGame.status + ')', false);
-  await loadGame(bestGame);
-}
-
-function selectGame(gameId) {
-  // On live board, system controls the game — viewers cannot manually switch
-  return;
-}
-
-function selectGameById(gameId) {
-  // On live board, system controls the game — viewers cannot manually switch
-  return;
-}
-
-function toggleOdds(btn) {
-  btn.classList.toggle('selected');
-  const selected = document.querySelectorAll('.odds-btn.selected');
-  const legsSection = document.querySelector('.legs-section');
-
-  if (selected.length === 0) {
-    legsSection.innerHTML = `
-      <div class="legs-title">Selected Legs (0)</div>
-      <div style="font-size:11px;color:var(--text3);padding:4px 0;">Click odds above to add legs</div>`;
-    return;
-  }
-
-  let html = `<div class="legs-title">Selected Legs (${selected.length})</div>`;
-  selected.forEach(b => {
-    const label = b.querySelector('.odds-btn-label').textContent;
-    const odds = b.querySelector('.odds-value').textContent;
-    html += `<div class="leg-row"><span class="leg-label">${label}</span><span class="leg-odds">${odds}</span></div>`;
-  });
-  legsSection.innerHTML = html;
-}
-
-function setQty(n, btn) {
-  currentQty = n;
+// ── CLAIM SQUARES ─────────────────────────────────────────────────────────────
+function setQty(n, el) {
+  claimQty = n;
   document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const price = parseFloat(document.getElementById('squarePrice').value) || 10;
-  document.getElementById('totalAmount').textContent = `$${(n * price).toFixed(2)}`;
-  document.getElementById('totalSquares').textContent = `${n} Square${n > 1 ? 's' : ''}`;
-  updateCTA();
+  el.classList.add('active');
 }
 
-function updateCTA() {
-  document.querySelector('.cta-btn').innerHTML = `
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-    BUY ${currentQty} SQUARE${currentQty > 1 ? 'S' : ''} NOW`;
-}
-
-function updatePriceDisplay(val) {
-  const p = parseFloat(val);
-  window._squarePrice = p;
-  const qty = currentQty || 5;
-  const lbl = document.getElementById('modalSquaresLabel');
-  const tot = document.getElementById('modalTotal');
-  if (lbl) lbl.textContent = qty + ' Square' + (qty > 1 ? 's' : '') + ' × $' + p;
-  if (tot) tot.textContent = '$' + (qty * p).toFixed(2);
-  document.getElementById('totalAmount').textContent = `$${(qty * p).toFixed(2)}`;
-}
-
-function openPayModal() {
-  const price = parseFloat(document.getElementById('squarePrice').value) || 10;
-  document.getElementById('modalSquaresLabel').textContent = `${currentQty} Square${currentQty > 1 ? 's' : ''} × $${price}`;
-  document.getElementById('modalTotal').textContent = `$${(currentQty * price).toFixed(2)}`;
-  document.getElementById('initialsInput').value = '';
-  document.getElementById('confirmBtn').disabled = true;
-  document.getElementById('payModal').classList.add('open');
-}
-
-let _selectedPayMethod = 'cashapp';
-
-function selectPay(el, method) {
-  document.querySelectorAll('.modal-pay-option').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  _selectedPayMethod = method || 'cashapp';
-  updatePayInstructions();
-}
-
-function updatePayInstructions() {
-  const el = document.getElementById('payInstructions');
-  if (!el) return;
-  const price = parseFloat(document.getElementById('squarePrice').value) || 10;
-  const qty = currentQty || 5;
-  const total = (qty * price).toFixed(2);
-  if (_selectedPayMethod === 'card') {
-    el.innerHTML = '💳 Pay securely by card via <strong style="color:#818cf8;">Stripe</strong><br><span style="font-size:10px;color:var(--text3);">You will be redirected to checkout — squares locked after payment</span>';
-  } else if (_selectedPayMethod === 'cashapp') {
-    el.innerHTML = '💚 Send <strong style="color:#22c55e;">$' + total + '</strong> to <strong style="color:#22c55e;">$MDdisc</strong> on Cash App<br><span style="font-size:10px;color:var(--text3);">Scan QR or tap Pay button — include your initials in the note</span>';
-  } else if (_selectedPayMethod === 'paypal') {
-    el.innerHTML = '💙 Send <strong style="color:#60a5fa;">$' + total + '</strong> to <strong style="color:#60a5fa;">willie.mayes@gmail.com</strong> on PayPal<br><span style="font-size:10px;color:var(--text3);">Friends & Family — include your initials in the note</span>';
-  }
-}
-
-function checkInitials() {
-  document.getElementById('confirmBtn').disabled = document.getElementById('initialsInput').value.trim().length < 3;
-  updatePayInstructions();
-}
-
-async function confirmPurchase() {
+function selectCell(idx) {
+  if (!currentGameId) return;
   const initials = document.getElementById('initialsInput').value.trim().toUpperCase();
-  if (initials.length < 3) { alert('Enter at least 3 initials.'); return; }
-  const btn = document.getElementById('confirmBtn');
-  btn.disabled = true;
-  const game = currentGame;
-  if (!game || !game.id) {
-    btn.disabled = false;
-    alert('No game loaded. Select a sport and game first.'); return;
-  }
-  const price = parseFloat(document.getElementById('squarePrice').value) || 10;
-  const qty = currentQty || 5;
-  const total = (qty * price).toFixed(2);
+  if (!initials) { showToast('Enter your initials first', true); return; }
 
-  // ── Card → Stripe checkout ──────────────────────────────
-  if (_selectedPayMethod === 'card') {
-    btn.textContent = '💳 Opening Checkout...';
-    try {
-      const r = await fetch('/api/create-checkout', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ gameId: game.id, initials, qty, priceEach: Math.round(price * 100) })
-      });
-      const text = await r.text();
-      let resp = {};
-      try { resp = JSON.parse(text); } catch(_) {}
-      if (resp.url) {
-        window.location.href = resp.url;
-      } else {
-        throw new Error(resp.error || 'Could not create checkout session');
-      }
-    } catch(e) {
-      btn.disabled = false; btn.textContent = '📲 Reserve My Squares';
-      if (e.message && e.message.includes('fetch')) {
-        alert('Card checkout is not yet available. Please use Cash App or PayPal to pay Willie directly.');
-      } else {
-        alert('Stripe error: ' + e.message);
-      }
-    }
-    return;
+  // Pick random available cells
+  const allOpen = Array.from(document.querySelectorAll('.cell-open')).map(c => parseInt(c.dataset.idx));
+  if (allOpen.length < claimQty) { showToast('Not enough squares available', true); return; }
+
+  // Include the clicked cell, fill rest randomly
+  const rest = allOpen.filter(i => i !== idx);
+  const picks = [idx];
+  for (let i = 0; i < claimQty - 1 && rest.length > 0; i++) {
+    const r = Math.floor(Math.random() * rest.length);
+    picks.push(rest.splice(r, 1)[0]);
   }
 
-  // ── CashApp / PayPal → reserve pending + show pay button ──
-  btn.textContent = '⏳ Reserving...';
-  try {
-    const r = await fetch('/api/auto-assign', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ gameId: game.id, qty, initials, pending: true, payMethod: _selectedPayMethod, amount: total })
-    });
-    const text = await r.text();
-    let data = {};
-    try { data = JSON.parse(text); } catch(_) {}
-    if (!r.ok || !data.ok) throw new Error(data.error || 'Reserve failed');
+  pendingIndices = picks;
+  document.getElementById('modalTitle').textContent = `Claim ${picks.length} Square${picks.length > 1 ? 's' : ''}`;
+  document.getElementById('modalBody').textContent = `Claim ${picks.length} square${picks.length > 1 ? 's' : ''} as "${initials}"? $${picks.length * 10} total.`;
+  document.getElementById('confirmModal').classList.add('open');
+}
 
-    localStorage.setItem('my_' + game.id, JSON.stringify(data.indices));
-    localStorage.setItem('initials_' + game.id, initials);
-    _cache[game.id] = null;
+function claimSquares() {
+  if (!currentGameId) { showToast('Select a game first', true); return; }
+  const initials = document.getElementById('initialsInput').value.trim().toUpperCase();
+  if (!initials) { showToast('Enter your initials first', true); return; }
 
-    document.getElementById('payModal').classList.remove('open');
+  const allOpen = Array.from(document.querySelectorAll('.cell-open')).map(c => parseInt(c.dataset.idx));
+  if (allOpen.length < claimQty) { showToast('Not enough open squares', true); return; }
 
-    // Build pay button
-    var payBtnHtml = '';
-    if (_selectedPayMethod === 'cashapp') {
-      var caUrl = 'https://cash.app/$MDdisc';
-      payBtnHtml = '<a href="' + caUrl + '" target="_blank" onclick="setTimeout(function(){document.getElementById(\'confirmModal\').classList.remove(\'open\');},300);" style="display:block;margin-top:16px;padding:16px 24px;background:linear-gradient(135deg,#00D632,#00a828);color:white;font-weight:800;font-size:17px;border-radius:12px;text-decoration:none;text-align:center;box-shadow:0 4px 20px rgba(0,214,50,0.35);">💚 Pay $' + total + ' on Cash App</a>';
-    } else if (_selectedPayMethod === 'paypal') {
-      var ppUrl = 'https://paypal.me/williemayes/' + total + 'USD';
-      payBtnHtml = '<a href="' + ppUrl + '" target="_blank" onclick="setTimeout(function(){document.getElementById(\'confirmModal\').classList.remove(\'open\');},300);" style="display:block;margin-top:16px;padding:16px 24px;background:linear-gradient(135deg,#0070ba,#003087);color:white;font-weight:800;font-size:17px;border-radius:12px;text-decoration:none;text-align:center;box-shadow:0 4px 20px rgba(0,112,186,0.35);">💙 Pay $' + total + ' on PayPal</a>';
-    }
+  const picks = [];
+  const pool = [...allOpen];
+  for (let i = 0; i < claimQty; i++) {
+    const r = Math.floor(Math.random() * pool.length);
+    picks.push(pool.splice(r, 1)[0]);
+  }
 
-    document.getElementById('confirmMsg').innerHTML =
-      data.indices.length + ' square' + (data.indices.length > 1 ? 's' : '') + ' x $' + price + ' = <strong style="color:white;">$' + total + '</strong>' +
-      '<br><span style="color:#22c55e;font-size:13px;margin-top:6px;display:block;">Reserved as <strong>' + initials + '</strong></span>' +
-      '<br><span style="color:var(--text3);font-size:11px;">Tap below to complete payment — squares lock automatically</span>' +
-      payBtnHtml;
+  pendingIndices = picks;
+  document.getElementById('modalTitle').textContent = `Claim ${picks.length} Square${picks.length > 1 ? 's' : ''}`;
+  document.getElementById('modalBody').textContent = `Claim ${picks.length} square${picks.length > 1 ? 's' : ''} as "${initials}"? $${picks.length * 10} total.`;
+  document.getElementById('confirmModal').classList.add('open');
+}
 
-    setTimeout(() => {
-      document.getElementById('confirmModal').classList.add('open');
-      buildGrid(game);
-    }, 150);
-  } catch(e) {
-    btn.disabled = false; btn.textContent = '📲 Reserve My Squares';
-    alert(e.message);
+async function confirmClaim() {
+  closeModal();
+  const initials = document.getElementById('initialsInput').value.trim().toUpperCase();
+  const gameId = currentGameId;
+
+  // Get latest data
+  let row = await sbGet(gameId);
+  const owners = row ? { ...(row.owners || {}) } : {};
+
+  // Check none taken since we last loaded
+  for (const idx of pendingIndices) {
+    if (owners[idx] !== undefined) { showToast('Some squares were just taken. Refreshing...', true); await buildBoard(gameId); return; }
+  }
+
+  // Assign
+  pendingIndices.forEach(idx => { owners[idx] = initials; });
+
+  // Save to Supabase
+  const ok = await sbUpsert({
+    game_id: gameId,
+    owners: owners,
+    row_nums: row ? row.row_nums : null,
+    col_nums: row ? row.col_nums : null,
+    numbers_locked: row ? row.numbers_locked : false
+  });
+
+  if (ok) {
+    // Save locally
+    const myKey = `mySquares_${gameId}`;
+    const existing = new Set(JSON.parse(localStorage.getItem(myKey) || '[]'));
+    pendingIndices.forEach(i => existing.add(i));
+    localStorage.setItem(myKey, JSON.stringify([...existing]));
+    localStorage.setItem(`initials_${gameId}`, initials);
+
+    showToast(`✓ ${pendingIndices.length} square${pendingIndices.length > 1 ? 's' : ''} claimed!`);
+    await buildBoard(gameId);
+  } else {
+    showToast('Error saving — try again', true);
   }
 }
 
-function closeConfirm() {
+function closeModal() {
   document.getElementById('confirmModal').classList.remove('open');
 }
 
-// ── ADMIN ────────────────────────────────────────────────────
-async function lockNumbers(game) {
-  if (!game) { location.reload(); return; }
-  var topCells = document.querySelectorAll('.axis-header.axis-top');
-  var leftCells = document.querySelectorAll('.axis-header.axis-left');
-  var rowNums = Array.from(topCells).map(function(el){ return parseInt(el.textContent.trim()); });
-  var colNums = Array.from(leftCells).map(function(el){ return parseInt(el.textContent.trim()); });
-  if (rowNums.length !== 10 || colNums.length !== 10) { alert('Open a game board first (found ' + rowNums.length + ' top, ' + colNums.length + ' left)'); return; }
-  var pin = prompt('Enter admin PIN to lock numbers:');
-  if (!pin) return;
-  fetch('/api/lock-numbers', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({gameId: game.id, pin: pin, rowNums: rowNums, colNums: colNums})
-  }).then(function(r){ return r.json(); }).then(function(d){
-    if (d.ok) { alert('Numbers locked! All boards will now match.'); location.reload(); }
-    else { alert('Error: ' + (d.error || 'Unknown')); }
-  }).catch(function(e){ alert('Error: ' + e.message); });
-}
+// ── LOCK NUMBERS ──────────────────────────────────────────────────────────────
+async function lockNumbers() {
+  if (!currentGameId) { showToast('Select a game first', true); return; }
+  const pin = prompt('Enter admin PIN to lock numbers:');
+  if (pin !== ADMIN_PIN) { alert('Wrong PIN'); return; }
 
-async function adminReset() {
-  // Try to get game from currentGame or from the dropdown
-  var game = window.currentGame;
-  if (!game) {
-    var sel = document.getElementById('gameSelect');
-    if (sel && sel.value) {
-      for (var sp of Object.keys(espnGames)) {
-        var found = (espnGames[sp] || []).find(function(g) { return g.id === sel.value; });
-        if (found) { game = found; window.currentGame = found; break; }
-      }
-    }
-  }
-  if (!game) {
-    await updateSport(currentSport || 'NBA');
-    game = window.currentGame;
-  }
-  if (!game) { alert('No game loaded. Pick a sport and game first.'); return; }
+  const topCells = document.querySelectorAll('.axis-top');
+  const leftCells = document.querySelectorAll('.axis-left');
+  const rowNums = Array.from(topCells).map(el => parseInt(el.textContent.trim()));
+  const colNums = Array.from(leftCells).map(el => parseInt(el.textContent.trim()));
 
-  var pin = prompt('Enter admin PIN to reset board for ' + game.away + ' @ ' + game.home + ':');
-  if (!pin) return;
-  fetch('/api/reset-squares', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({gameId: game.id, pin: pin})
-  }).then(function(r) {
-    return r.json();
-  }).then(function(d) {
-    if (d.ok) {
-      // Clear server cache AND localStorage for this game
-      _cache = {};
-      localStorage.removeItem('my_' + game.id);
-      localStorage.removeItem('initials_' + game.id);
-      alert('Board cleared for ' + game.away + ' @ ' + game.home + '!');
-      buildGrid(game);
-    } else {
-      alert('Error: ' + (d.error || 'failed'));
-    }
-  }).catch(function(e) {
-    alert('Network error: ' + e.message);
+  if (rowNums.length !== 10 || colNums.length !== 10) { showToast('Open a board first', true); return; }
+
+  let row = await sbGet(currentGameId);
+  const owners = row ? (row.owners || {}) : {};
+
+  const ok = await sbUpsert({
+    game_id: currentGameId,
+    owners: owners,
+    row_nums: rowNums,
+    col_nums: colNums,
+    numbers_locked: true
   });
+
+  if (ok) { showToast('🔒 Numbers locked!'); await buildBoard(currentGameId); }
+  else { showToast('Error locking numbers', true); }
 }
 
-// ── INIT ─────────────────────────────────────────────────────
-// ── INIT ─────────────────────────────────────────────────────
-// ── QUARTER TRACKER ──────────────────────────────────────────
-var _qtrData = {}; // cached period results per gameId
+// ── RESET BOARD ───────────────────────────────────────────────────────────────
+async function resetBoard() {
+  if (!currentGameId) { showToast('Select a game first', true); return; }
+  const pin = prompt('Enter admin PIN to reset board:');
+  if (pin !== ADMIN_PIN) { alert('Wrong PIN'); return; }
+  if (!confirm(`Clear ALL squares for this board? This cannot be undone.`)) return;
 
-// Returns sport config: { periods, labels, payouts, housecut }
-// housecut: flat % off top for house (only NCAA Men halves = 0.20)
-function getSportConfig(sport) {
-  if (sport === 'MM_MEN') {
-    // 2 halves: H1=40%, H2=40%, house always gets flat 20%
-    return { periods: 2, labels: ['H1','H2'], payouts: [0.40, 0.40], housecut: 0.20 };
-  } else if (sport === 'MLB') {
-    // 9 innings: house always gets 20%, remaining 80% split equally across 9 innings (~8.89% each)
-    const pct = 0.80 / 9;
-    return { periods: 9, labels: ['I1','I2','I3','I4','I5','I6','I7','I8','I9'], payouts: Array(9).fill(pct), housecut: 0.20 };
+  let row = await sbGet(currentGameId);
+
+  const ok = await sbUpsert({
+    game_id: currentGameId,
+    owners: {},
+    row_nums: row ? row.row_nums : null,
+    col_nums: row ? row.col_nums : null,
+    numbers_locked: row ? row.numbers_locked : false
+  });
+
+  if (ok) {
+    // Clear local storage too
+    localStorage.removeItem(`mySquares_${currentGameId}`);
+    localStorage.removeItem(`initials_${currentGameId}`);
+    showToast('✓ Board cleared!');
+    await buildBoard(currentGameId);
   } else {
-    // NBA/NHL/NFL/MLS/WNBA/MM_WOMEN: 4 quarters, 20% each, house always gets 20% flat
-    return { periods: 4, labels: ['Q1','Q2','Q3','Q4'], payouts: [0.20, 0.20, 0.20, 0.20], housecut: 0.20 };
+    showToast('Error resetting board', true);
   }
 }
 
-async function updateQtrTracker(game, squaresData) {
-  if (!game) return;
-  const tracker = document.getElementById('qtrTracker');
-  const body = document.getElementById('qtrBody');
-  const houseSummary = document.getElementById('qtrHouseSummary');
-  if (!tracker || !body) return;
-
-  const owners = squaresData && squaresData.owners ? squaresData.owners : {};
-  const totalSold = Object.keys(owners).length;
-  const price = parseFloat(document.getElementById('squarePrice') && document.getElementById('squarePrice').value) || 10;
-
-  // Always show tracker
-  tracker.style.display = 'block';
-
-  // Set team labels
-  const awayEl = document.getElementById('qtrAwayLabel');
-  const homeEl = document.getElementById('qtrHomeLabel');
-  if (awayEl) awayEl.textContent = game.away || 'AWAY';
-  if (homeEl) homeEl.textContent = game.home || 'HOME';
-
-  // Live score in header
-  const scoreEl = document.getElementById('qtrLiveScore');
-  if (scoreEl) {
-    if (game.status === 'LIVE') {
-      scoreEl.textContent = game.away + ' ' + (game.awayScore||0) + ' — ' + (game.homeScore||0) + ' ' + game.home + ' | Q' + (game.period||'');
-      scoreEl.style.color = 'var(--yellow)';
-    } else if (game.status === 'FINAL') {
-      scoreEl.textContent = game.away + ' ' + (game.awayScore||0) + ' — ' + (game.homeScore||0) + ' ' + game.home + ' | FINAL';
-      scoreEl.style.color = 'var(--text2)';
-    } else {
-      scoreEl.textContent = game.away + ' vs ' + game.home + ' | ' + (game.time || 'Upcoming');
-      scoreEl.style.color = 'var(--text3)';
-    }
-  }
-
-  if (totalSold === 0) {
-    body.innerHTML = '<tr><td colspan="5" style="color:var(--text3);padding:8px 6px;font-size:11px;text-align:center;">No squares sold yet</td></tr>';
-    if (houseSummary) houseSummary.style.display = 'none';
-    return;
-  }
-
-  const pot = totalSold * price;
-  const cfg = getSportConfig(currentSport);
-  const houseFlatAmt = pot * cfg.housecut;
-  const playablePot = pot - houseFlatAmt;
-
-  const period = parseInt(game.period) || 0;
-  const awayScore = parseInt(game.awayScore) || 0;
-  const homeScore = parseInt(game.homeScore) || 0;
-
-  if (!_qtrData[game.id]) _qtrData[game.id] = {};
-  const stored = _qtrData[game.id];
-
-  if ((game.status === 'LIVE' || game.status === 'FINAL') && period >= 1) {
-    if (game.status === 'FINAL') {
-      for (let p = 1; p <= Math.max(cfg.periods, period); p++) {
-        if (!stored['p' + p] && (p === period || p === cfg.periods)) {
-          stored['p' + p] = { away: awayScore, home: homeScore };
-        }
-      }
-    } else {
-      stored['p' + period] = { away: awayScore, home: homeScore };
-    }
-  }
-
-  let houseWinTotal = houseFlatAmt;
-  let houseUnclaimed = [];
-  let rows = '';
-
-  for (let p = 1; p <= cfg.periods; p++) {
-    const snap = stored['p' + p];
-    const isComplete = snap && (game.status === 'FINAL' || period > p);
-    const isCurrent = period === p && game.status === 'LIVE';
-    const periodPayout = playablePot * cfg.payouts[p - 1];
-    const label = cfg.labels[p - 1];
-
-    if (!snap && !isCurrent) {
-      rows += `<tr style="opacity:0.4;">
-        <td style="padding:5px 6px;font-weight:700;color:var(--text2);">${label}</td>
-        <td style="padding:5px 6px;text-align:center;">—</td>
-        <td style="padding:5px 6px;text-align:center;">—</td>
-        <td style="padding:5px 6px;text-align:center;color:var(--text3);">TBD</td>
-        <td style="padding:5px 6px;text-align:right;color:var(--text3);">$${periodPayout.toFixed(2)}</td>
-      </tr>`;
-      continue;
-    }
-
-    const scoreSnap = snap || { away: awayScore, home: homeScore };
-    const awayDig = scoreSnap.away % 10;
-    const homeDig = scoreSnap.home % 10;
-
-    let winner = null;
-    if (squaresData && squaresData.rowNums && squaresData.colNums) {
-      const rowIdx = squaresData.colNums.indexOf(awayDig);
-      const colIdx = squaresData.rowNums.indexOf(homeDig);
-      if (rowIdx !== -1 && colIdx !== -1) {
-        winner = owners[rowIdx * 10 + colIdx] || null;
-      }
-    }
-
-    const winnerDisplay = winner || (isComplete || isCurrent ? 'House' : 'TBD');
-    const winnerColor = winner ? '#22c55e' : (winnerDisplay === 'House' ? '#f59e0b' : 'var(--text3)');
-
-    if ((isComplete || isCurrent) && !winner) {
-      houseWinTotal += periodPayout;
-      houseUnclaimed.push(label);
-    }
-
-    const rowBg = isCurrent ? 'background:rgba(250,204,21,0.06);' : isComplete ? 'background:rgba(34,197,94,0.04);' : '';
-    rows += `<tr style="${rowBg}border-top:1px solid rgba(255,255,255,0.04);">
-      <td style="padding:5px 6px;font-weight:700;color:var(--text2);">${label}${isCurrent ? ' <span style="color:var(--yellow);font-size:9px;">LIVE</span>' : isComplete ? ' <span style="color:#22c55e;font-size:9px;">FINAL</span>' : ''}</td>
-      <td style="padding:5px 6px;text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:700;">${scoreSnap.away}</td>
-      <td style="padding:5px 6px;text-align:center;font-family:'IBM Plex Mono',monospace;font-weight:700;">${scoreSnap.home}</td>
-      <td style="padding:5px 6px;text-align:center;font-weight:700;color:${winnerColor};">${winnerDisplay}</td>
-      <td style="padding:5px 6px;text-align:right;font-weight:700;color:${winner ? '#22c55e' : winnerDisplay === 'House' ? '#f59e0b' : 'var(--text3)'};">$${periodPayout.toFixed(2)}</td>
-    </tr>`;
-  }
-
-  // NCAA Men: always show flat house cut row
-  if (cfg.housecut > 0) {
-    rows += `<tr style="border-top:1px solid rgba(255,255,255,0.06);background:rgba(245,158,11,0.04);">
-      <td colspan="3" style="padding:5px 6px;font-weight:700;color:#f59e0b;font-size:11px;">🏠 HOUSE CUT (20%)</td>
-      <td style="padding:5px 6px;text-align:center;color:#f59e0b;">Always</td>
-      <td style="padding:5px 6px;text-align:right;font-weight:700;color:#f59e0b;">$${houseFlatAmt.toFixed(2)}</td>
-    </tr>`;
-  }
-
-  rows += `<tr style="border-top:2px solid rgba(255,255,255,0.1);">
-    <td colspan="3" style="padding:6px 6px;font-weight:700;color:var(--text2);font-size:11px;">TOTAL POT</td>
-    <td style="padding:6px 6px;text-align:center;font-weight:700;color:var(--text2);">—</td>
-    <td style="padding:6px 6px;text-align:right;font-weight:700;color:white;">$${pot.toFixed(2)}</td>
-  </tr>`;
-
-  body.innerHTML = rows;
-
-  if (houseWinTotal > 0) {
-    houseSummary.style.display = 'block';
-    let msg = '🏠 <strong style="color:#f59e0b;">House</strong> collects <strong style="color:#f59e0b;">$' + houseWinTotal.toFixed(2) + '</strong>';
-    if (cfg.housecut > 0) msg += ' (20% flat cut';
-    if (houseUnclaimed.length > 0) msg += (cfg.housecut > 0 ? ' + ' : ' — ') + houseUnclaimed.join(', ') + ' unclaimed';
-    if (cfg.housecut > 0) msg += ')';
-    houseSummary.innerHTML = msg;
-  } else {
-    houseSummary.style.display = 'none';
-  }
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = isError ? 'var(--red)' : 'var(--green)';
+  t.style.color = isError ? 'var(--red)' : 'var(--green)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
 }
-
-document.addEventListener('DOMContentLoaded', async () => {
-  logStatus('Page loading...', false);
-
-  // ── Set date immediately ──────────────────────────────────
-  (function() {
-    const d = new Date(currentDate + 'T12:00:00');
-    const el = document.getElementById('live-date');
-    if (el) el.textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  })();
-
-  // ── Handle Stripe redirect callbacks ─────────────────────
-  var _sp = new URLSearchParams(window.location.search);
-  if (_sp.get('payment') === 'success') {
-    window.history.replaceState({}, '', window.location.pathname);
-    var _msg = document.createElement('div');
-    _msg.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#16a34a;color:white;padding:14px 24px;border-radius:12px;font-weight:700;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
-    _msg.textContent = '✅ Payment received! Your squares are locked in.';
-    document.body.appendChild(_msg);
-    setTimeout(function() { _msg.remove(); }, 5000);
-  }
-  if (_sp.get('payment') === 'cancelled') {
-    window.history.replaceState({}, '', window.location.pathname);
-    var _msg2 = document.createElement('div');
-    _msg2.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:white;padding:14px 24px;border-radius:12px;font-weight:700;font-size:15px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
-    _msg2.textContent = '❌ Payment cancelled — squares not reserved.';
-    document.body.appendChild(_msg2);
-    setTimeout(function() { _msg2.remove(); }, 4000);
-  }
-
-  try {
-    initDatePicker();
-    // Force set date picker value immediately
-    const _picker = document.getElementById('gameDate');
-    if (_picker) _picker.value = currentDate;
-
-    // Show loading state
-    const _grid = document.getElementById('squaresGrid');
-    if (_grid) _grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);font-size:13px;">Agent scanning for live games...</div>';
-
-    // Scan sports in parallel for speed
-    logStatus('Agent scanning all sports for live games...', false);
-    const allSports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'MLS', 'WNBA'];
-    const results = await Promise.allSettled(allSports.map(async (sport) => {
-      const data = await fetchEspnScores(sport);
-      if (data && data.games && data.games.length) {
-        const topGames = filterTopGames(data.games);
-        espnGames[sport] = topGames;
-        return { sport, games: topGames, best: pickBestGame(topGames) };
-      }
-      return null;
-    }));
-
-    // Find best game across all sports
-    let bestGame = null;
-    let bestSport = 'NBA';
-    for (const r of results) {
-      if (r.status === 'fulfilled' && r.value) {
-        const { sport, best } = r.value;
-        if (best && best.status === 'LIVE' && (!bestGame || bestGame.status !== 'LIVE')) {
-          bestGame = best; bestSport = sport;
-        } else if (best && !bestGame) {
-          bestGame = best; bestSport = sport;
-        }
-      }
-    }
-
-    if (bestGame) {
-      currentSport = bestSport;
-      const sportEl = document.getElementById('sportSelect');
-      if (sportEl) sportEl.value = bestSport;
-      populateGameDropdown(bestSport);
-      buildGamesList(bestSport);
-      logStatus('Agent selected: ' + bestGame.away + ' @ ' + bestGame.home + ' (' + bestSport + ')', false);
-      await loadGame(bestGame);
-    } else {
-      await updateSport('NBA');
-    }
-    logStatus('Page ready ✓ | Game: ' + (currentGame ? currentGame.away + ' @ ' + currentGame.home : 'NONE'), !currentGame);
-    // Load ticker in background (don't block)
-    buildTicker().catch(e => logStatus('Ticker error: ' + e.message, true));
-
-    // Agent re-scans every 5 minutes for a better live game
-    setInterval(async function() {
-      try {
-        const allSports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'MLS', 'WNBA'];
-        const results = await Promise.allSettled(allSports.map(async (sport) => {
-          const data = await fetchEspnScores(sport);
-          if (data && data.games && data.games.length) {
-            const topGames = filterTopGames(data.games);
-            espnGames[sport] = topGames;
-            return { sport, best: pickBestGame(topGames) };
-          }
-          return null;
-        }));
-        let newBest = null, newSport = currentSport;
-        for (const r of results) {
-          if (r.status === 'fulfilled' && r.value) {
-            const { sport, best } = r.value;
-            if (best && best.status === 'LIVE' && (!newBest || newBest.status !== 'LIVE')) {
-              newBest = best; newSport = sport;
-            } else if (best && !newBest) {
-              newBest = best; newSport = sport;
-            }
-          }
-        }
-        // Only switch if a better LIVE game found
-        if (newBest && newBest.id !== currentGame?.id && newBest.status === 'LIVE') {
-          logStatus('Agent switching to better game: ' + newBest.away + ' @ ' + newBest.home, false);
-          currentSport = newSport;
-          const sportEl = document.getElementById('sportSelect');
-          if (sportEl) sportEl.value = newSport;
-          populateGameDropdown(newSport);
-          buildGamesList(newSport);
-          await loadGame(newBest);
-        }
-      } catch(e) { logStatus('Agent rescan error: ' + e.message, true); }
-    }, 5 * 60 * 1000);
-  } catch (e) {
-    logStatus('INIT FAILED: ' + e.message, true);
-  }
-});
 </script>
-
-<script src="/props.js"></script>
 </body>
 </html>
