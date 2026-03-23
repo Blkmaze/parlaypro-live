@@ -949,10 +949,11 @@
             <span id="live-date">Loading...</span>
           </span>
           <span id="live-game-label" style="font-weight:700;color:var(--text);font-size:13px;margin-left:8px;"></span>
+          <span style="font-size:9px;font-weight:800;color:var(--green-light);background:rgba(22,163,74,0.15);border:1px solid rgba(22,163,74,0.3);padding:2px 6px;border-radius:4px;margin-left:6px;letter-spacing:0.05em;">🤖 AGENT SELECTED</span>
         </div>
       </div>
       <div class="sport-controls">
-        <select class="sport-select" id="sportSelect" style="opacity:1;pointer-events:none;">
+        <select class="sport-select" id="sportSelect" style="opacity:1;pointer-events:none;cursor:default;">
           <option value="NBA">🏀 NBA</option>
           <option value="NHL">🏒 NHL</option>
           <option value="MLB">⚾ MLB</option>
@@ -963,9 +964,12 @@
           <option value="MM_WOMEN">🏀 March Madness (Women)</option>
         </select>
         <div style="display:flex;align-items:center;gap:4px;">
-          <input type="date" id="gameDate" class="game-select" style="min-width:130px;color-scheme:dark;opacity:1;pointer-events:none;" />
+          <input type="date" id="gameDate" class="game-select" style="min-width:130px;color-scheme:dark;opacity:1;pointer-events:none;cursor:default;" />
         </div>
-        <select class="game-select" id="gameSelect" style="opacity:1;pointer-events:none;">
+        <select class="game-select" id="gameSelect" style="opacity:1;pointer-events:none;cursor:default;">
+          <!-- populated by JS -->
+        </select>
+      </div>
           <!-- populated by JS -->
         </select>
       </div>
@@ -1133,7 +1137,7 @@
             <div class="pay-icon pay-icon-cashapp">$</div>
             <div class="pay-info">
               <div class="pay-name">Cash App</div>
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://cash.app/%247707438091" alt="Cash App QR" style="width:70px;height:70px;border-radius:6px;margin-top:4px;display:block;" />
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://cash.app/%24MDdisc" alt="Cash App QR" style="width:70px;height:70px;border-radius:6px;margin-top:4px;display:block;" />
             </div>
           </div>
           <div class="pay-card pay-paypal" style="cursor:default;">
@@ -1271,7 +1275,7 @@
         <div class="modal-pay-option selected" id="payOpt-cashapp" onclick="selectPay(this,'cashapp')">
           <div class="modal-pay-icon" style="background:#00D632;">$</div>
           <div class="modal-pay-name">Cash App</div>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=https://cash.app/%247707438091" alt="QR" style="width:50px;height:50px;border-radius:4px;margin-top:4px;" />
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=https://cash.app/%24MDdisc" alt="QR" style="width:50px;height:50px;border-radius:4px;margin-top:4px;" />
         </div>
         <div class="modal-pay-option" id="payOpt-paypal" onclick="selectPay(this,'paypal')">
           <div class="modal-pay-icon" style="background:#0070ba;font-style:italic;font-size:13px;">P</div>
@@ -1864,7 +1868,7 @@ function updatePayInstructions() {
   if (_selectedPayMethod === 'card') {
     el.innerHTML = '💳 Pay securely by card via <strong style="color:#818cf8;">Stripe</strong><br><span style="font-size:10px;color:var(--text3);">You will be redirected to checkout — squares locked after payment</span>';
   } else if (_selectedPayMethod === 'cashapp') {
-    el.innerHTML = '💚 Send <strong style="color:#22c55e;">$' + total + '</strong> to <strong style="color:#22c55e;">$7707438091</strong> on Cash App<br><span style="font-size:10px;color:var(--text3);">Scan QR or tap Pay button — include your initials in the note</span>';
+    el.innerHTML = '💚 Send <strong style="color:#22c55e;">$' + total + '</strong> to <strong style="color:#22c55e;">$MDdisc</strong> on Cash App<br><span style="font-size:10px;color:var(--text3);">Scan QR or tap Pay button — include your initials in the note</span>';
   } else if (_selectedPayMethod === 'paypal') {
     el.innerHTML = '💙 Send <strong style="color:#60a5fa;">$' + total + '</strong> to <strong style="color:#60a5fa;">willie.mayes@gmail.com</strong> on PayPal<br><span style="font-size:10px;color:var(--text3);">Friends & Family — include your initials in the note</span>';
   }
@@ -1939,7 +1943,7 @@ async function confirmPurchase() {
     // Build pay button
     var payBtnHtml = '';
     if (_selectedPayMethod === 'cashapp') {
-      var caUrl = 'https://cash.app/$7707438091';
+      var caUrl = 'https://cash.app/$MDdisc';
       payBtnHtml = '<a href="' + caUrl + '" target="_blank" onclick="setTimeout(function(){document.getElementById(\'confirmModal\').classList.remove(\'open\');},300);" style="display:block;margin-top:16px;padding:16px 24px;background:linear-gradient(135deg,#00D632,#00a828);color:white;font-weight:800;font-size:17px;border-radius:12px;text-decoration:none;text-align:center;box-shadow:0 4px 20px rgba(0,214,50,0.35);">💚 Pay $' + total + ' on Cash App</a>';
     } else if (_selectedPayMethod === 'paypal') {
       var ppUrl = 'https://paypal.me/williemayes/' + total + 'USD';
@@ -2276,6 +2280,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     logStatus('Page ready ✓ | Game: ' + (currentGame ? currentGame.away + ' @ ' + currentGame.home : 'NONE'), !currentGame);
     // Load ticker in background (don't block)
     buildTicker().catch(e => logStatus('Ticker error: ' + e.message, true));
+
+    // Agent re-scans every 5 minutes for a better live game
+    setInterval(async function() {
+      try {
+        const allSports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'MLS', 'WNBA'];
+        const results = await Promise.allSettled(allSports.map(async (sport) => {
+          const data = await fetchEspnScores(sport);
+          if (data && data.games && data.games.length) {
+            const topGames = filterTopGames(data.games);
+            espnGames[sport] = topGames;
+            return { sport, best: pickBestGame(topGames) };
+          }
+          return null;
+        }));
+        let newBest = null, newSport = currentSport;
+        for (const r of results) {
+          if (r.status === 'fulfilled' && r.value) {
+            const { sport, best } = r.value;
+            if (best && best.status === 'LIVE' && (!newBest || newBest.status !== 'LIVE')) {
+              newBest = best; newSport = sport;
+            } else if (best && !newBest) {
+              newBest = best; newSport = sport;
+            }
+          }
+        }
+        // Only switch if a better LIVE game found
+        if (newBest && newBest.id !== currentGame?.id && newBest.status === 'LIVE') {
+          logStatus('Agent switching to better game: ' + newBest.away + ' @ ' + newBest.home, false);
+          currentSport = newSport;
+          const sportEl = document.getElementById('sportSelect');
+          if (sportEl) sportEl.value = newSport;
+          populateGameDropdown(newSport);
+          buildGamesList(newSport);
+          await loadGame(newBest);
+        }
+      } catch(e) { logStatus('Agent rescan error: ' + e.message, true); }
+    }, 5 * 60 * 1000);
   } catch (e) {
     logStatus('INIT FAILED: ' + e.message, true);
   }
