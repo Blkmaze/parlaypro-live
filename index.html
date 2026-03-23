@@ -542,21 +542,22 @@ async function pickBestGamesAI(allGames, maxBoards) {
 
 async function agentScan() {
   logStatus('Agent scanning all sports...', false);
-  document.getElementById('agentStatus').textContent = '🔍 Agent scanning today + tomorrow...';
+  document.getElementById('agentStatus').textContent = '🔍 Agent scanning for live games...';
   const allSports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'NFL', 'MLS', 'WNBA'];
 
-  // Get today and tomorrow dates
+  // Step 1: Scan TODAY first (fastest — gets live games immediately)
   const now = new Date();
   const todayStr = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0') + String(now.getDate()).padStart(2,'0');
-  const tmr = new Date(now); tmr.setDate(tmr.getDate() + 1);
+  const tmr = new Date(now); tmr.setDate(tmr.getDate()+1);
   const tmrStr = tmr.getFullYear() + String(tmr.getMonth()+1).padStart(2,'0') + String(tmr.getDate()).padStart(2,'0');
 
-  // Scan today AND tomorrow in parallel
-  const allFetches = allSports.flatMap(sport => [
-    fetchEspnScores(sport, todayStr),
-    fetchEspnScores(sport, tmrStr)
-  ]);
-  const results = await Promise.allSettled(allFetches);
+  // Scan today + tomorrow in parallel (16 calls max)
+  const results = await Promise.allSettled(
+    allSports.flatMap(sport => [
+      fetchEspnScores(sport, todayStr),
+      fetchEspnScores(sport, tmrStr)
+    ])
+  );
   let allGames = [];
   const seen = new Set();
   results.forEach(r => {
@@ -693,6 +694,8 @@ function seededShuffle(arr, seed) {
 
 async function buildGrid(game) {
   if (!game) return;
+  const grid = document.getElementById('squaresGrid');
+  try {
   const serverData = await fetchSquares(game.id);
   const serverOwners = serverData.owners || {};
   const serverPending = serverData.pending || {};
@@ -730,12 +733,17 @@ async function buildGrid(game) {
       else if (isSold) { cls='cell-sold'; text=owner||''; }
       else if (isPending) { cls='cell-pending'; text=pendingInitials||'⏳'; }
       else { cls='cell-open'; }
-      html += `<div class="cell ${cls}" data-idx="${idx}" style="${style}">${text}</div>`;
+      const clickHandler = (cls==='cell-open') ? `onclick="openPayModal()"` : '';
+      html += `<div class="cell ${cls}" data-idx="${idx}" ${clickHandler} style="${style}">${text}</div>`;
     }
   }
   document.getElementById('squaresGrid').innerHTML = html;
   updateQtrTracker(game, serverData).catch(function(){});
   buildBoardsSummary();
+  } catch(e) {
+    logStatus('Grid error: ' + e.message, true);
+    if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);">⚠️ Error loading grid — tap Force Refresh</div>';
+  }
 }
 
 // ── SERVER SYNC ──────────────────────────────────────────────
