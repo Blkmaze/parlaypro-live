@@ -2064,10 +2064,6 @@ async function updateQtrTracker(game, squaresData) {
   const totalSold = Object.keys(owners).length;
   const price = parseFloat(document.getElementById('squarePrice') && document.getElementById('squarePrice').value) || 10;
 
-  const owners = squaresData && squaresData.owners ? squaresData.owners : {};
-  const totalSold = Object.keys(owners).length;
-  const price = parseFloat(document.getElementById('squarePrice') && document.getElementById('squarePrice').value) || 10;
-
   // Always show tracker
   tracker.style.display = 'block';
 
@@ -2294,3 +2290,4 @@ document.addEventListener('DOMContentLoaded', async () => {
 </body>
 </html>
 <!-- v202603222032 -->
+
