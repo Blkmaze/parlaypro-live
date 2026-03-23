@@ -527,58 +527,17 @@ async function fetchEspnScores(sport) {
 }
 
 // ── AGENT LOGIC ──────────────────────────────────────────────
-async function pickBestGamesAI(allGames, maxBoards) {
-  // First filter: remove games with no relevance
-  const candidates = allGames.filter(g => g.status === 'LIVE' || g.status === 'UPCOMING');
-  if (!candidates.length) return allGames.slice(0, maxBoards);
-
-  try {
-    // Use Claude AI to pick the most exciting games for squares
-    const gameList = candidates.map((g, i) =>
-      `${i+1}. ${g.away} @ ${g.home} [${g.sport}] Status:${g.status}${g.status==='LIVE'?' Score:'+g.awayScore+'-'+g.homeScore+' Q'+g.period:' Time:'+g.time}`
-    ).join('\n');
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 200,
-        messages: [{
-          role: 'user',
-          content: `You are an AI agent for a sports squares gambling app. Pick the ${maxBoards} most exciting games from this list for squares boards. Prioritize: 1) LIVE games with close scores, 2) High-profile matchups, 3) Popular sports (NBA, NFL, NCAA March Madness). Return ONLY a JSON array of the game numbers you selected, e.g. [1,3,5,2]. Games:\n${gameList}`
-        }]
-      })
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      const text = data.content && data.content[0] && data.content[0].text || '';
-      const match = text.match(/\[[\d,\s]+\]/);
-      if (match) {
-        const indices = JSON.parse(match[0]).map(n => parseInt(n) - 1);
-        const selected = indices.filter(i => i >= 0 && i < candidates.length).map(i => candidates[i]);
-        if (selected.length) {
-          logStatus('🤖 AI selected ' + selected.length + ' games', false);
-          return selected.slice(0, maxBoards);
-        }
-      }
-    }
-  } catch(e) {
-    logStatus('AI selection failed, using fallback: ' + e.message, true);
-  }
-
-  // Fallback: simple algorithm
-  return pickBestGames(candidates, maxBoards);
+function pickBestGames(games, maxBoards) {
+  if (!games || !games.length) return [];
+  const live = games.filter(g => g.status === 'LIVE')
+    .sort((a,b) => (parseInt(b.awayScore)+parseInt(b.homeScore)) - (parseInt(a.awayScore)+parseInt(a.homeScore)));
+  const upcoming = games.filter(g => g.status === 'UPCOMING' || g.status === 'SCHEDULED');
+  const finals = games.filter(g => g.status === 'FINAL').slice(0, 1);
+  return [...live, ...upcoming, ...finals].slice(0, maxBoards);
 }
 
-function pickBestGames(games, maxBoards) {
-  // Sort: LIVE first (highest score), then UPCOMING, then FINAL
-  const live = allGames.filter(g => g.status === 'LIVE')
-    .sort((a,b) => (parseInt(b.awayScore)+parseInt(b.homeScore)) - (parseInt(a.awayScore)+parseInt(a.homeScore)));
-  const upcoming = allGames.filter(g => g.status === 'UPCOMING' || g.status === 'SCHEDULED');
-  const finals = allGames.filter(g => g.status === 'FINAL').slice(0, 1);
-  return [...live, ...upcoming, ...finals].slice(0, maxBoards);
+async function pickBestGamesAI(allGames, maxBoards) {
+  return pickBestGames(allGames.filter(g => g.status === 'LIVE' || g.status === 'UPCOMING' || g.status === 'FINAL'), maxBoards);
 }
 
 async function agentScan() {
