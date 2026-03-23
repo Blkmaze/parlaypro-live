@@ -32,6 +32,12 @@
   @keyframes scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
+  /* NAV TABS */
+  .nav-tabs { display:flex; gap:4px; background:var(--surface2); border-radius:8px; padding:3px; }
+  .nav-tab { padding:5px 14px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; color:var(--text2); transition:all 0.15s; text-decoration:none; display:flex; align-items:center; gap:5px; border:none; background:transparent; }
+  .nav-tab.active { background:var(--surface3); color:var(--green-light); }
+  .nav-tab:hover { color:var(--text); }
+
   /* AGENT HEADER */
   .agent-header {
     display: flex; align-items: center; justify-content: space-between;
@@ -172,6 +178,18 @@
   .confirm-icon { width:72px; height:72px; background:var(--green-dim); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:36px; border:2px solid rgba(34,197,94,0.3); }
   .confirm-title { font-family:'Bebas Neue',sans-serif; font-size:34px; letter-spacing:2px; }
 
+  /* PLAYER PROPS */
+  .prop-row { padding:10px 0; border-bottom:1px solid var(--border); }
+  .prop-row:last-child { border-bottom:none; }
+  .prop-player { font-size:13px; font-weight:700; }
+  .prop-line { font-size:11px; color:var(--text2); margin-top:2px; }
+  .prop-btns { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px; }
+  .prop-btn { padding:8px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; border:1px solid var(--border2); background:var(--surface2); color:var(--text2); transition:all 0.15s; text-align:center; }
+  .prop-btn:hover { border-color:var(--green); color:var(--green-light); }
+  .prop-btn.selected-over { background:rgba(22,163,74,0.2); border-color:var(--green); color:var(--green-light); }
+  .prop-btn.selected-under { background:rgba(220,38,38,0.2); border-color:var(--red); color:#f87171; }
+  .prop-result { font-family:'IBM Plex Mono',monospace; font-size:11px; margin-top:4px; }
+
   /* STATUS BAR */
   #statusBar { position:fixed; bottom:0; left:0; right:0; background:#111; border-top:1px solid #333; padding:6px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:#22c55e; z-index:9999; }
 
@@ -201,6 +219,11 @@
     <div>
       <div class="agent-title">🏆 ParlayPro Live — Super Squares</div>
       <div class="agent-status" id="agentStatus">Agent scanning for live games...</div>
+    </div>
+    <div class="nav-tabs">
+      <a href="/" class="nav-tab active">🏈 Squares</a>
+      <a href="/pickem" class="nav-tab">⚡ Pick'em</a>
+      <a href="/admin" class="nav-tab">🔐 Admin</a>
     </div>
     <div class="agent-badge">
       <span>🤖</span>
@@ -330,6 +353,17 @@
           Active Boards
         </div>
         <div id="boardsSummaryList"></div>
+      </div>
+
+      <!-- PLAYER PROPS -->
+      <div class="boards-summary" id="propsCard" style="display:none;">
+        <div class="boards-summary-header" style="justify-content:space-between;">
+          <span>⚡ Player Props</span>
+          <span id="propsGameLabel" style="font-size:10px;color:var(--text3);"></span>
+        </div>
+        <div id="propsList" style="padding:8px 14px;">
+          <div style="color:var(--text3);font-size:12px;padding:8px 0;">Loading player props...</div>
+        </div>
       </div>
 
       <!-- LEGEND -->
@@ -642,6 +676,8 @@ async function loadBoard(idx) {
   }
 
   await buildGrid(game);
+  // Load player props for this game
+  renderPlayerProps(game, board.sport).catch(()=>{});
 
   // Start polling for this board
   if (window._pollTimer) clearInterval(window._pollTimer);
@@ -806,6 +842,97 @@ async function updateQtrTracker(game, squaresData) {
   body.innerHTML=rows;
   if (houseWinTotal>0){houseSummary.style.display='block';let msg='🏠 <strong style="color:#f59e0b;">House</strong> collects <strong style="color:#f59e0b;">$'+houseWinTotal.toFixed(2)+'</strong>';if(cfg.housecut>0)msg+=' (20% flat cut';if(houseUnclaimed.length>0)msg+=(cfg.housecut>0?' + ':' — ')+houseUnclaimed.join(', ')+' unclaimed';if(cfg.housecut>0)msg+=')';houseSummary.innerHTML=msg;}
   else{houseSummary.style.display='none';}
+}
+
+// ── PLAYER PROPS ─────────────────────────────────────────────
+let _propsData = {}; // { gameId: [players] }
+let _propsSelections = {}; // { playerId: 'over'|'under' }
+
+async function fetchPlayerProps(gameId, sport) {
+  if (_propsData[gameId]) return _propsData[gameId];
+  try {
+    const sportMap = { 'nba':'basketball/nba','nhl':'hockey/nhl','mlb':'baseball/mlb','ncaam':'basketball/mens-college-basketball','ncaaw':'basketball/womens-college-basketball' };
+    const league = sportMap[sport] || 'basketball/nba';
+    const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${league}/summary?event=${gameId}&_=${Date.now()}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    const players = [];
+    const boxscore = data.boxscore;
+    if (!boxscore || !boxscore.players) return [];
+    for (const team of boxscore.players) {
+      const teamAbbr = team.team && team.team.abbreviation;
+      const stats = team.statistics && team.statistics[0];
+      if (!stats) continue;
+      const statNames = stats.names || [];
+      const athletes = stats.athletes || [];
+      for (const athlete of athletes.slice(0, 4)) {
+        const name = athlete.athlete && athlete.athlete.displayName;
+        const vals = athlete.stats || [];
+        // Map common stat positions
+        const pts = parseFloat(vals[statNames.indexOf('PTS')] || vals[13] || 0);
+        const reb = parseFloat(vals[statNames.indexOf('REB')] || vals[6] || 0);
+        const ast = parseFloat(vals[statNames.indexOf('AST')] || vals[7] || 0);
+        if (name && pts >= 0) {
+          players.push({
+            id: athlete.athlete && athlete.athlete.id,
+            name, team: teamAbbr,
+            stats: { pts, reb, ast },
+            lines: {
+              pts: Math.round(pts > 0 ? pts - 0.5 : 15) + 0.5,
+              reb: Math.round(reb > 0 ? reb - 0.5 : 5) + 0.5,
+              ast: Math.round(ast > 0 ? ast - 0.5 : 3) + 0.5,
+            }
+          });
+        }
+      }
+    }
+    _propsData[gameId] = players;
+    return players;
+  } catch(e) {
+    logStatus('Props fetch failed: ' + e.message, true);
+    return [];
+  }
+}
+
+async function renderPlayerProps(game, sport) {
+  const card = document.getElementById('propsCard');
+  const list = document.getElementById('propsList');
+  const label = document.getElementById('propsGameLabel');
+  if (!card || !list) return;
+
+  if (!game) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  label.textContent = game.away + ' @ ' + game.home;
+  list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0;">Fetching player stats...</div>';
+
+  const players = await fetchPlayerProps(game.id, sport);
+  if (!players.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0;">No player stats available yet — check back once the game starts.</div>';
+    return;
+  }
+
+  list.innerHTML = players.slice(0, 6).map(p => {
+    const sel = _propsSelections[p.id] || '';
+    const liveScore = game.status === 'LIVE' ? `<span class="prop-result">Live: ${p.stats.pts} pts / ${p.stats.reb} reb / ${p.stats.ast} ast</span>` : '';
+    return `<div class="prop-row">
+      <div class="prop-player">${p.name} <span style="color:var(--text3);font-size:10px;">${p.team}</span></div>
+      <div class="prop-line">Points O/U ${p.lines.pts} · Reb O/U ${p.lines.reb} · Ast O/U ${p.lines.ast}</div>
+      ${liveScore}
+      <div class="prop-btns">
+        <div class="prop-btn${sel==='over'?' selected-over':''}" onclick="selectProp('${p.id}','over',this)">⬆ OVER ${p.lines.pts} pts</div>
+        <div class="prop-btn${sel==='under'?' selected-under':''}" onclick="selectProp('${p.id}','under',this)">⬇ UNDER ${p.lines.pts} pts</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectProp(playerId, side, btn) {
+  _propsSelections[playerId] = side;
+  // Update button styles
+  const parent = btn.parentElement;
+  parent.querySelectorAll('.prop-btn').forEach(b => { b.className = 'prop-btn'; });
+  btn.className = 'prop-btn ' + (side === 'over' ? 'selected-over' : 'selected-under');
+  logStatus('Selected ' + side + ' for player ' + playerId, false);
 }
 
 // ── TICKER ────────────────────────────────────────────────────
