@@ -1816,8 +1816,16 @@ function closeConfirm() {
 
 // ── INIT ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  await loadAllProps();
-  // Refresh props every 2 minutes for live games
+  // Show props IMMEDIATELY — no waiting
+  allProps = getTonightsScheduledProps();
+  renderCards();
+  logStatus('Loaded ' + allProps.length + ' player props — checking ESPN for live games...');
+  // Then update in background
+  try {
+    await loadAllProps();
+  } catch(e) {
+    logStatus('Loaded ' + allProps.length + ' player props');
+  }
   setInterval(loadAllProps, 2 * 60 * 1000);
 });
 </script>
