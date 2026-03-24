@@ -1349,13 +1349,6 @@ function getTonightsScheduledProps() {
   }
   return props.length ? props : getLegacySampleProps();
 }
-  for (const g of tonightGames) {
-    const awayPlayers = getPlayersFromDB(g.away, g.sport, g.id, g.away+' @ '+g.home, false, 'UPCOMING', g.time);
-    const homePlayers = getPlayersFromDB(g.home, g.sport, g.id, g.away+' @ '+g.home, false, 'UPCOMING', g.time);
-    props.push(...awayPlayers.slice(0,2), ...homePlayers.slice(0,2));
-  }
-  return props.length ? props : getLegacySampleProps();
-}
 
 function getLegacySampleProps() {
   return [
