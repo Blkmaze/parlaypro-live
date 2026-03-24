@@ -753,9 +753,56 @@ body::before {
 /* MOBILE */
 @media(max-width:768px) {
   .main { grid-template-columns: 1fr; }
-  .slip-panel { position: fixed; bottom: 0; left: 0; right: 0; top: auto; height: auto; border-left: none; border-top: 1px solid var(--border); z-index: 50; max-height: 70vh; }
-  .slip-panel.collapsed { height: 60px; }
-  .cards-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Cards area gets full width + bottom padding so FAB doesn't cover last card */
+  .cards-area { padding-bottom: 90px; }
+
+  /* Player cards — single column on phone, shows full card */
+  .cards-grid { grid-template-columns: 1fr; gap: 10px; }
+
+  /* Slip panel hidden by default — slides up from bottom */
+  .slip-panel {
+    position: fixed; bottom: 0; left: 0; right: 0; top: auto;
+    height: 0; overflow: hidden;
+    border-left: none; border-top: 1px solid var(--border);
+    z-index: 100;
+    transition: height 0.3s ease;
+    border-radius: 20px 20px 0 0;
+  }
+  .slip-panel.open {
+    height: 80vh;
+    overflow-y: auto;
+  }
+
+  /* FAB — floating slip button bottom right */
+  .slip-fab {
+    display: flex !important;
+  }
+}
+
+/* FAB button — hidden on desktop */
+.slip-fab {
+  display: none;
+  position: fixed;
+  bottom: 20px; right: 20px;
+  z-index: 101;
+  background: var(--accent);
+  color: #000;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px; letter-spacing: 1px;
+  padding: 12px 18px;
+  border-radius: 50px;
+  border: none; cursor: pointer;
+  align-items: center; gap: 8px;
+  box-shadow: 0 4px 20px rgba(0,229,255,0.3);
+}
+.slip-fab-count {
+  background: #000;
+  color: var(--accent);
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900;
 }
 ::-webkit-scrollbar { width:4px; }
 ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:4px; }
@@ -765,7 +812,11 @@ body::before {
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- MOBILE SLIP FAB -->
+<button class="slip-fab" id="slipFab" onclick="toggleMobileSlip()">
+  ⚡ MY SLIP
+  <span class="slip-fab-count" id="fabCount">0</span>
+</button>
 <div class="header">
   <div class="logo">ParlayPro</div>
   <div class="nav-tabs">
@@ -810,7 +861,7 @@ body::before {
   </div>
 
   <!-- ENTRY SLIP -->
-  <div class="slip-panel">
+  <div class="slip-panel" id="slipPanel">
     <div class="slip-header">
       <div class="slip-title">MY ENTRY SLIP</div>
       <div class="mode-toggle">
@@ -973,64 +1024,75 @@ function updateSportPills() {
 // ── PLAYER DATABASE ──────────────────────────────────────────
 // Pre-loaded prop lines — shows immediately when schedule posts, no API needed
 const PLAYER_DB = {
+  // NBA 2025-26
   'LAL':[{name:'LeBron James',pos:'SF',lines:{pts:24.5,reb:7.5,ast:7.5},color:'552583'},{name:'Anthony Davis',pos:'C',lines:{pts:26.5,reb:12.5,ast:3.5},color:'552583'}],
   'GSW':[{name:'Steph Curry',pos:'PG',lines:{pts:26.5,reb:4.5,ast:5.5},color:'1D428A'},{name:'Draymond Green',pos:'PF',lines:{pts:9.5,reb:7.5,ast:6.5},color:'1D428A'}],
+  'GS':[{name:'Steph Curry',pos:'PG',lines:{pts:26.5,reb:4.5,ast:5.5},color:'1D428A'},{name:'Draymond Green',pos:'PF',lines:{pts:9.5,reb:7.5,ast:6.5},color:'1D428A'}],
   'MIL':[{name:'Giannis Antetokounmpo',pos:'PF',lines:{pts:28.5,reb:11.5,ast:5.5},color:'00471B'},{name:'Damian Lillard',pos:'PG',lines:{pts:23.5,reb:4.5,ast:6.5},color:'00471B'}],
   'BOS':[{name:'Jayson Tatum',pos:'SF',lines:{pts:27.5,reb:8.5,ast:4.5},color:'007A33'},{name:'Jaylen Brown',pos:'SG',lines:{pts:22.5,reb:5.5,ast:3.5},color:'007A33'}],
-  'DAL':[{name:'Luka Doncic',pos:'PG',lines:{pts:29.5,reb:8.5,ast:8.5},color:'00538C'},{name:'Kyrie Irving',pos:'PG',lines:{pts:23.5,reb:4.5,ast:5.5},color:'00538C'}],
+  'DAL':[{name:'Kyrie Irving',pos:'PG',lines:{pts:23.5,reb:4.5,ast:5.5},color:'00538C'},{name:'Klay Thompson',pos:'SG',lines:{pts:17.5,reb:3.5,ast:2.5},color:'00538C'}],
   'PHX':[{name:'Kevin Durant',pos:'SF',lines:{pts:26.5,reb:6.5,ast:4.5},color:'1D1160'},{name:'Devin Booker',pos:'SG',lines:{pts:25.5,reb:4.5,ast:6.5},color:'1D1160'}],
   'DEN':[{name:'Nikola Jokic',pos:'C',lines:{pts:26.5,reb:12.5,ast:9.5},color:'0E2240'},{name:'Jamal Murray',pos:'PG',lines:{pts:21.5,reb:4.5,ast:6.5},color:'0E2240'}],
-  'MIN':[{name:'Anthony Edwards',pos:'SG',lines:{pts:25.5,reb:5.5,ast:5.5},color:'0C2340'},{name:'Rudy Gobert',pos:'C',lines:{pts:14.5,reb:12.5,ast:1.5},color:'0C2340'}],
+  'MIN':[{name:'Anthony Edwards',pos:'SG',lines:{pts:25.5,reb:5.5,ast:5.5},color:'0C2340'},{name:'Julius Randle',pos:'PF',lines:{pts:22.5,reb:9.5,ast:5.5},color:'0C2340'}],
   'OKC':[{name:'Shai Gilgeous-Alexander',pos:'PG',lines:{pts:30.5,reb:5.5,ast:6.5},color:'007AC1'},{name:'Jalen Williams',pos:'SG',lines:{pts:22.5,reb:4.5,ast:4.5},color:'007AC1'}],
   'CLE':[{name:'Donovan Mitchell',pos:'SG',lines:{pts:26.5,reb:5.5,ast:5.5},color:'860038'},{name:'Darius Garland',pos:'PG',lines:{pts:19.5,reb:3.5,ast:6.5},color:'860038'}],
   'NYK':[{name:'Jalen Brunson',pos:'PG',lines:{pts:28.5,reb:3.5,ast:6.5},color:'006BB6'},{name:'Karl-Anthony Towns',pos:'C',lines:{pts:24.5,reb:13.5,ast:3.5},color:'006BB6'}],
   'IND':[{name:'Tyrese Haliburton',pos:'PG',lines:{pts:20.5,reb:4.5,ast:10.5},color:'002D62'},{name:'Pascal Siakam',pos:'PF',lines:{pts:21.5,reb:7.5,ast:3.5},color:'002D62'}],
   'MIA':[{name:'Bam Adebayo',pos:'C',lines:{pts:19.5,reb:10.5,ast:3.5},color:'98002E'},{name:'Tyler Herro',pos:'SG',lines:{pts:20.5,reb:5.5,ast:4.5},color:'98002E'}],
   'ORL':[{name:'Paolo Banchero',pos:'PF',lines:{pts:22.5,reb:6.5,ast:5.5},color:'0077C0'},{name:'Franz Wagner',pos:'SF',lines:{pts:19.5,reb:5.5,ast:3.5},color:'0077C0'}],
-  'ATL':[{name:'Trae Young',pos:'PG',lines:{pts:23.5,reb:3.5,ast:10.5},color:'E03A3E'},{name:'Dejounte Murray',pos:'PG',lines:{pts:20.5,reb:5.5,ast:5.5},color:'E03A3E'}],
-  'CHI':[{name:'Zach LaVine',pos:'SG',lines:{pts:23.5,reb:4.5,ast:4.5},color:'CE1141'},{name:'DeMar DeRozan',pos:'SF',lines:{pts:22.5,reb:4.5,ast:5.5},color:'CE1141'}],
-  'TOR':[{name:'Scottie Barnes',pos:'PF',lines:{pts:19.5,reb:8.5,ast:6.5},color:'CE1141'},{name:'RJ Barrett',pos:'SG',lines:{pts:21.5,reb:6.5,ast:3.5},color:'CE1141'}],
+  'ATL':[{name:'Trae Young',pos:'PG',lines:{pts:23.5,reb:3.5,ast:10.5},color:'E03A3E'},{name:'Jalen Johnson',pos:'PF',lines:{pts:19.5,reb:8.5,ast:5.5},color:'E03A3E'}],
+  'CHI':[{name:'Zach LaVine',pos:'SG',lines:{pts:23.5,reb:4.5,ast:4.5},color:'CE1141'},{name:'Nikola Vucevic',pos:'C',lines:{pts:18.5,reb:10.5,ast:3.5},color:'CE1141'}],
+  'TOR':[{name:'Scottie Barnes',pos:'PF',lines:{pts:19.5,reb:8.5,ast:6.5},color:'CE1141'},{name:'Immanuel Quickley',pos:'PG',lines:{pts:18.5,reb:4.5,ast:6.5},color:'CE1141'}],
   'DET':[{name:'Cade Cunningham',pos:'PG',lines:{pts:22.5,reb:4.5,ast:7.5},color:'C8102E'},{name:'Jalen Duren',pos:'C',lines:{pts:12.5,reb:11.5,ast:2.5},color:'C8102E'}],
   'CHA':[{name:'LaMelo Ball',pos:'PG',lines:{pts:23.5,reb:5.5,ast:8.5},color:'1D1160'},{name:'Brandon Miller',pos:'SF',lines:{pts:17.5,reb:4.5,ast:2.5},color:'1D1160'}],
-  'SAS':[{name:'Victor Wembanyama',pos:'C',lines:{pts:21.5,reb:10.5,ast:3.5},color:'C4CED4'},{name:'Devin Vassell',pos:'SG',lines:{pts:18.5,reb:3.5,ast:3.5},color:'C4CED4'}],
+  'SAS':[{name:'Victor Wembanyama',pos:'C',lines:{pts:24.5,reb:10.5,ast:3.5},color:'C4CED4'},{name:'Chris Paul',pos:'PG',lines:{pts:9.5,reb:4.5,ast:8.5},color:'C4CED4'}],
   'HOU':[{name:'Alperen Sengun',pos:'C',lines:{pts:21.5,reb:9.5,ast:5.5},color:'CE1141'},{name:'Jalen Green',pos:'SG',lines:{pts:22.5,reb:4.5,ast:3.5},color:'CE1141'}],
   'MEM':[{name:'Ja Morant',pos:'PG',lines:{pts:25.5,reb:5.5,ast:8.5},color:'5D76A9'},{name:'Jaren Jackson Jr.',pos:'C',lines:{pts:22.5,reb:5.5,ast:2.5},color:'5D76A9'}],
-  'NOP':[{name:'Zion Williamson',pos:'PF',lines:{pts:23.5,reb:5.5,ast:4.5},color:'0C2340'},{name:'Brandon Ingram',pos:'SF',lines:{pts:22.5,reb:5.5,ast:5.5},color:'0C2340'}],
-  'POR':[{name:'Anfernee Simons',pos:'SG',lines:{pts:20.5,reb:3.5,ast:5.5},color:'E03A3E'},{name:'Jerami Grant',pos:'SF',lines:{pts:19.5,reb:4.5,ast:2.5},color:'E03A3E'}],
-  'UTA':[{name:'Lauri Markkanen',pos:'PF',lines:{pts:23.5,reb:8.5,ast:1.5},color:'002B5C'},{name:'Jordan Clarkson',pos:'PG',lines:{pts:18.5,reb:3.5,ast:4.5},color:'002B5C'}],
+  'NOP':[{name:'Zion Williamson',pos:'PF',lines:{pts:23.5,reb:5.5,ast:4.5},color:'0C2340'},{name:'CJ McCollum',pos:'SG',lines:{pts:18.5,reb:3.5,ast:4.5},color:'0C2340'}],
+  'POR':[{name:'Anfernee Simons',pos:'SG',lines:{pts:20.5,reb:3.5,ast:5.5},color:'E03A3E'},{name:'Scoot Henderson',pos:'PG',lines:{pts:16.5,reb:4.5,ast:6.5},color:'E03A3E'}],
+  'UTA':[{name:'Lauri Markkanen',pos:'PF',lines:{pts:23.5,reb:8.5,ast:1.5},color:'002B5C'},{name:'Collin Sexton',pos:'PG',lines:{pts:18.5,reb:3.5,ast:4.5},color:'002B5C'}],
   'SAC':[{name:"De'Aaron Fox",pos:'PG',lines:{pts:25.5,reb:4.5,ast:6.5},color:'5A2D81'},{name:'Domantas Sabonis',pos:'C',lines:{pts:19.5,reb:13.5,ast:7.5},color:'5A2D81'}],
-  'LAC':[{name:'Kawhi Leonard',pos:'SF',lines:{pts:23.5,reb:6.5,ast:3.5},color:'C8102E'},{name:'James Harden',pos:'PG',lines:{pts:16.5,reb:5.5,ast:8.5},color:'C8102E'}],
+  'LAC':[{name:'Kawhi Leonard',pos:'SF',lines:{pts:23.5,reb:6.5,ast:3.5},color:'C8102E'},{name:'Norman Powell',pos:'SG',lines:{pts:18.5,reb:3.5,ast:2.5},color:'C8102E'}],
   'PHI':[{name:'Joel Embiid',pos:'C',lines:{pts:34.5,reb:11.5,ast:5.5},color:'006BB6'},{name:'Tyrese Maxey',pos:'PG',lines:{pts:25.5,reb:3.5,ast:6.5},color:'006BB6'}],
-  'BKN':[{name:'Mikal Bridges',pos:'SF',lines:{pts:19.5,reb:4.5,ast:3.5},color:'000000'},{name:'Cam Thomas',pos:'SG',lines:{pts:22.5,reb:4.5,ast:3.5},color:'000000'}],
+  'BKN':[{name:'Cam Thomas',pos:'SG',lines:{pts:22.5,reb:4.5,ast:3.5},color:'000000'},{name:'Ben Simmons',pos:'PG',lines:{pts:8.5,reb:6.5,ast:5.5},color:'000000'}],
   'WAS':[{name:'Kyle Kuzma',pos:'PF',lines:{pts:22.5,reb:7.5,ast:3.5},color:'002B5C'},{name:'Jordan Poole',pos:'PG',lines:{pts:17.5,reb:3.5,ast:5.5},color:'002B5C'}],
-  'GS':[{name:'Steph Curry',pos:'PG',lines:{pts:26.5,reb:4.5,ast:5.5},color:'1D428A'},{name:'Klay Thompson',pos:'SG',lines:{pts:16.5,reb:3.5,ast:2.5},color:'1D428A'}],
-  // NHL — pts=goals, reb=assists, ast=shots
+  // NHL 2025-26
   'EDM':[{name:'Connor McDavid',pos:'C',lines:{pts:1.5,reb:1.5,ast:4.5},color:'041E42'},{name:'Leon Draisaitl',pos:'C',lines:{pts:1.5,reb:1.5,ast:4.5},color:'041E42'}],
   'COL':[{name:'Nathan MacKinnon',pos:'C',lines:{pts:1.5,reb:1.5,ast:4.5},color:'6F263D'},{name:'Mikko Rantanen',pos:'RW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'6F263D'}],
   'VGK':[{name:'Mark Stone',pos:'RW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'B4975A'},{name:'Jack Eichel',pos:'C',lines:{pts:1.5,reb:1.5,ast:3.5},color:'B4975A'}],
   'NYR':[{name:'Artemi Panarin',pos:'LW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'0038A8'},{name:'Adam Fox',pos:'D',lines:{pts:0.5,reb:1.5,ast:3.5},color:'0038A8'}],
   'FLA':[{name:'Aleksander Barkov',pos:'C',lines:{pts:1.5,reb:1.5,ast:3.5},color:'C8102E'},{name:'Matthew Tkachuk',pos:'LW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'C8102E'}],
   'CAR':[{name:'Sebastian Aho',pos:'C',lines:{pts:1.5,reb:1.5,ast:3.5},color:'CC0000'},{name:'Andrei Svechnikov',pos:'RW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'CC0000'}],
-  // MLB — pts=hits, reb=RBI, ast=runs
+  // MLB 2025-26
   'NYY':[{name:'Aaron Judge',pos:'RF',lines:{pts:1.5,reb:1.5,ast:1.5},color:'003087'},{name:'Juan Soto',pos:'RF',lines:{pts:1.5,reb:1.5,ast:1.5},color:'003087'}],
   'LAD':[{name:'Shohei Ohtani',pos:'DH',lines:{pts:1.5,reb:1.5,ast:1.5},color:'005A9C'},{name:'Freddie Freeman',pos:'1B',lines:{pts:1.5,reb:1.5,ast:1.5},color:'005A9C'}],
-  'ATL':[{name:'Ronald Acuna Jr.',pos:'RF',lines:{pts:1.5,reb:1.5,ast:1.5},color:'CE1141'},{name:'Matt Olson',pos:'1B',lines:{pts:1.5,reb:1.5,ast:1.5},color:'CE1141'}],
-  'HOU':[{name:'Jose Altuve',pos:'2B',lines:{pts:1.5,reb:1.5,ast:1.5},color:'002D62'},{name:'Yordan Alvarez',pos:'LF',lines:{pts:1.5,reb:1.5,ast:1.5},color:'002D62'}],
-  // March Madness — use team abbr from ESPN
-  'UNC':[{name:'Armando Bacot',pos:'C',lines:{pts:14.5,reb:9.5,ast:1.5},color:'4B9CD3'},{name:'RJ Davis',pos:'PG',lines:{pts:18.5,reb:3.5,ast:3.5},color:'4B9CD3'}],
-  'KAN':[{name:'Hunter Dickinson',pos:'C',lines:{pts:16.5,reb:10.5,ast:2.5},color:'0051A5'},{name:'Kevin McCullar',pos:'SF',lines:{pts:13.5,reb:5.5,ast:3.5},color:'0051A5'}],
-  'UK':[{name:'Oscar Tshiebwe',pos:'C',lines:{pts:16.5,reb:13.5,ast:1.5},color:'0033A0'},{name:'Cason Wallace',pos:'PG',lines:{pts:13.5,reb:4.5,ast:3.5},color:'0033A0'}],
-  'ALA':[{name:'Mark Sears',pos:'PG',lines:{pts:21.5,reb:4.5,ast:4.5},color:'9E1B32'},{name:'Jarin Stevenson',pos:'PF',lines:{pts:14.5,reb:7.5,ast:1.5},color:'9E1B32'}],
-  'IOWA':[{name:'Caitlin Clark',pos:'PG',lines:{pts:28.5,reb:7.5,ast:8.5},color:'FFCD00'},{name:'Kate Martin',pos:'G',lines:{pts:9.5,reb:5.5,ast:3.5},color:'FFCD00'}],
-  'SC':[{name:'Paige Bueckers',pos:'PG',lines:{pts:21.5,reb:5.5,ast:5.5},color:'73000A'},{name:'Ice Brady',pos:'G',lines:{pts:14.5,reb:4.5,ast:2.5},color:'73000A'}],
-  'CONN':[{name:'Paige Bueckers',pos:'PG',lines:{pts:22.5,reb:5.5,ast:5.5},color:'000E2F'},{name:'Aubrey Griffin',pos:'F',lines:{pts:10.5,reb:6.5,ast:1.5},color:'000E2F'}],
-  'LSU':[{name:'Angel Reese',pos:'C',lines:{pts:16.5,reb:13.5,ast:1.5},color:'461D7C'},{name:'Flaujae Johnson',pos:'G',lines:{pts:16.5,reb:6.5,ast:2.5},color:'461D7C'}],
-  'LOU':[{name:'Hailey Van Lith',pos:'G',lines:{pts:16.5,reb:4.5,ast:3.5},color:'AD0000'},{name:'Elizabeth Dixon',pos:'F',lines:{pts:12.5,reb:7.5,ast:1.5},color:'AD0000'}],
-  'ND':[{name:'Olivia Miles',pos:'PG',lines:{pts:15.5,reb:5.5,ast:7.5},color:'0C2340'},{name:'Sonia Citron',pos:'G',lines:{pts:14.5,reb:4.5,ast:2.5},color:'0C2340'}],
-  'OSU':[{name:'Taylor Mikesell',pos:'G',lines:{pts:14.5,reb:3.5,ast:2.5},color:'BB0000'},{name:'Rebeka Mikulasikova',pos:'G',lines:{pts:12.5,reb:4.5,ast:2.5},color:'BB0000'}],
-  'UVA':[{name:'Kaydan Lawson',pos:'G',lines:{pts:12.5,reb:3.5,ast:3.5},color:'232D4B'},{name:'Camryn Taylor',pos:'F',lines:{pts:10.5,reb:6.5,ast:1.5},color:'232D4B'}],
-  'WVU':[{name:'JJ Quinerly',pos:'G',lines:{pts:14.5,reb:3.5,ast:4.5},color:'002855'},{name:'Quinn Slazinski',pos:'F',lines:{pts:10.5,reb:5.5,ast:1.5},color:'002855'}],
+  // NCAA Women 2025-26 (no drafted players)
+  'CONN':[{name:'Azzi Fudd',pos:'G',lines:{pts:18.5,reb:4.5,ast:3.5},color:'000E2F'},{name:'Kaitlyn Chen',pos:'G',lines:{pts:12.5,reb:3.5,ast:4.5},color:'000E2F'}],
+  'UCONN':[{name:'Azzi Fudd',pos:'G',lines:{pts:18.5,reb:4.5,ast:3.5},color:'000E2F'},{name:'Kaitlyn Chen',pos:'G',lines:{pts:12.5,reb:3.5,ast:4.5},color:'000E2F'}],
+  'SC':[{name:'Joyce Edwards',pos:'C',lines:{pts:16.5,reb:9.5,ast:1.5},color:'73000A'},{name:'Tessa Johnson',pos:'G',lines:{pts:14.5,reb:4.5,ast:3.5},color:'73000A'}],
+  'UCLA':[{name:'Kiki Rice',pos:'G',lines:{pts:15.5,reb:4.5,ast:5.5},color:'2D68C4'},{name:'Londynn Jones',pos:'G',lines:{pts:13.5,reb:3.5,ast:4.5},color:'2D68C4'}],
+  'LSU':[{name:"Flau'jae Johnson",pos:'G',lines:{pts:19.5,reb:6.5,ast:2.5},color:'461D7C'},{name:'Aneesah Morrow',pos:'F',lines:{pts:17.5,reb:12.5,ast:1.5},color:'461D7C'}],
+  'TEX':[{name:'Madison Booker',pos:'G',lines:{pts:22.5,reb:5.5,ast:4.5},color:'BF5700'},{name:'Aaliyah Moore',pos:'F',lines:{pts:14.5,reb:7.5,ast:1.5},color:'BF5700'}],
+  'LOU':[{name:'Tajianna Roberts',pos:'C',lines:{pts:14.5,reb:9.5,ast:1.5},color:'AD0000'},{name:'Nyla Harris',pos:'G',lines:{pts:13.5,reb:4.5,ast:3.5},color:'AD0000'}],
+  'IOWA':[{name:'Lucy Olsen',pos:'G',lines:{pts:20.5,reb:4.5,ast:4.5},color:'FFCD00'},{name:'Hannah Stuelke',pos:'F',lines:{pts:16.5,reb:7.5,ast:1.5},color:'FFCD00'}],
+  'OSU':[{name:'Cotie McMahon',pos:'G',lines:{pts:17.5,reb:5.5,ast:3.5},color:'BB0000'},{name:'Ajae Petty',pos:'F',lines:{pts:13.5,reb:8.5,ast:1.5},color:'BB0000'}],
+  'ND':[{name:'Hannah Hidalgo',pos:'G',lines:{pts:20.5,reb:5.5,ast:5.5},color:'0C2340'},{name:'Olivia Miles',pos:'PG',lines:{pts:15.5,reb:5.5,ast:7.5},color:'0C2340'}],
+  'VAN':[{name:'Mikayla Blakes',pos:'G',lines:{pts:22.5,reb:4.5,ast:3.5},color:'866D4B'},{name:'Iyana Moore',pos:'G',lines:{pts:14.5,reb:3.5,ast:4.5},color:'866D4B'}],
+  'ILL':[{name:'Makira Cook',pos:'G',lines:{pts:15.5,reb:4.5,ast:3.5},color:'13294B'},{name:'Adalia McKinley',pos:'F',lines:{pts:12.5,reb:6.5,ast:1.5},color:'13294B'}],
+  'WVU':[{name:'JJ Quinerly',pos:'G',lines:{pts:16.5,reb:3.5,ast:5.5},color:'002855'},{name:'Quinn Slazinski',pos:'F',lines:{pts:11.5,reb:6.5,ast:1.5},color:'002855'}],
+  'UK':[{name:'Clara Strack',pos:'F',lines:{pts:14.5,reb:8.5,ast:2.5},color:'0033A0'},{name:'Amiya Burgess',pos:'G',lines:{pts:12.5,reb:3.5,ast:4.5},color:'0033A0'}],
+  'USC':[{name:'JuJu Watkins',pos:'G',lines:{pts:24.5,reb:5.5,ast:3.5},color:'990000'},{name:'Rayah Marshall',pos:'C',lines:{pts:14.5,reb:10.5,ast:1.5},color:'990000'}],
+  'OKST':[{name:'Haleigh Timmer',pos:'F',lines:{pts:16.5,reb:7.5,ast:1.5},color:'FF6600'},{name:'Achol Akot',pos:'F',lines:{pts:18.5,reb:8.5,ast:2.5},color:'FF6600'}],
+  'SYR':[{name:'Anaiyah Walters',pos:'G',lines:{pts:14.5,reb:4.5,ast:3.5},color:'F76900'},{name:'Georgia Woolley',pos:'G',lines:{pts:12.5,reb:3.5,ast:4.5},color:'F76900'}],
+  'ALA':[{name:'Karly Weathers',pos:'G',lines:{pts:16.5,reb:4.5,ast:3.5},color:'9E1B32'},{name:'Diana Collins',pos:'G',lines:{pts:15.5,reb:3.5,ast:2.5},color:'9E1B32'}],
+  'UVA':[{name:'Kaydan Lawson',pos:'G',lines:{pts:14.5,reb:3.5,ast:3.5},color:'232D4B'},{name:'Camryn Taylor',pos:'F',lines:{pts:11.5,reb:6.5,ast:1.5},color:'232D4B'}],
+  // NCAA Men 2025-26
+  'DUKE':[{name:'Cooper Flagg',pos:'PF',lines:{pts:18.5,reb:7.5,ast:4.5},color:'003087'},{name:'Kon Knueppel',pos:'G',lines:{pts:14.5,reb:4.5,ast:3.5},color:'003087'}],
+  'UNC':[{name:'Elliot Cadeau',pos:'PG',lines:{pts:14.5,reb:3.5,ast:6.5},color:'4B9CD3'},{name:'RJ Davis',pos:'G',lines:{pts:18.5,reb:3.5,ast:3.5},color:'4B9CD3'}],
+  'KAN':[{name:'Hunter Dickinson',pos:'C',lines:{pts:16.5,reb:10.5,ast:2.5},color:'0051A5'},{name:'AJ Storr',pos:'G',lines:{pts:14.5,reb:4.5,ast:2.5},color:'0051A5'}],
+  'GON':[{name:'Ryan Nembhard',pos:'PG',lines:{pts:17.5,reb:3.5,ast:6.5},color:'041E42'},{name:'Graham Ike',pos:'C',lines:{pts:16.5,reb:8.5,ast:1.5},color:'041E42'}],
 };
+
 
 function getPlayersFromDB(teamAbbr, sport, gameId, gameName, isLive, gameStatus, gameTime) {
   // Try exact match first, then uppercase
@@ -1272,10 +1334,10 @@ async function generatePropsForUpcoming(game, sport) {
 function generateSampleProps() {
   const samples = [
     {id:'lbj',name:'LeBron James',shortName:'James',team:'LAL',pos:'SF',sport:'NBA',teamColor:'552583',lines:{pts:24.5,reb:7.5,ast:7.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-1',gameName:'LAL @ GSW',gameStatus:'UPCOMING',gameTime:'7:30 PM ET'},
-    {id:'sc30',name:'Steph Curry',shortName:'Curry',team:'GSW',pos:'PG',sport:'NBA',teamColor:'006BB6',lines:{pts:26.5,reb:4.5,ast:5.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-1',gameName:'LAL @ GSW',gameStatus:'UPCOMING',gameTime:'7:30 PM ET'},
-    {id:'gian',name:'Giannis A.',shortName:'Giannis',team:'MIL',pos:'PF',sport:'NBA',teamColor:'00471B',lines:{pts:28.5,reb:11.5,ast:5.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-2',gameName:'MIL @ BOS',gameStatus:'UPCOMING',gameTime:'7:30 PM ET'},
-    {id:'tjd',name:'Tatum',shortName:'Tatum',team:'BOS',pos:'SF',sport:'NBA',teamColor:'007A33',lines:{pts:27.5,reb:8.5,ast:4.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-2',gameName:'MIL @ BOS',gameStatus:'UPCOMING',gameTime:'7:30 PM ET'},
-    {id:'luka',name:'Luka Doncic',shortName:'Luka',team:'DAL',pos:'PG',sport:'NBA',teamColor:'00538C',lines:{pts:29.5,reb:8.5,ast:8.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-3',gameName:'DAL @ PHX',gameStatus:'UPCOMING',gameTime:'9:00 PM ET'},
+    {id:'sc30',name:'Steph Curry',shortName:'Curry',team:'GSW',pos:'PG',sport:'NBA',teamColor:'1D428A',lines:{pts:26.5,reb:4.5,ast:5.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-1',gameName:'LAL @ GSW',gameStatus:'UPCOMING',gameTime:'7:30 PM ET'},
+    {id:'sga',name:'Shai G-Alexander',shortName:'SGA',team:'OKC',pos:'PG',sport:'NBA',teamColor:'007AC1',lines:{pts:30.5,reb:5.5,ast:6.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-2',gameName:'OKC @ DEN',gameStatus:'UPCOMING',gameTime:'8:00 PM ET'},
+    {id:'jok',name:'Nikola Jokic',shortName:'Jokic',team:'DEN',pos:'C',sport:'NBA',teamColor:'0E2240',lines:{pts:26.5,reb:12.5,ast:9.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-2',gameName:'OKC @ DEN',gameStatus:'UPCOMING',gameTime:'8:00 PM ET'},
+    {id:'kyrie',name:'Kyrie Irving',shortName:'Kyrie',team:'DAL',pos:'PG',sport:'NBA',teamColor:'00538C',lines:{pts:23.5,reb:4.5,ast:5.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-3',gameName:'DAL @ PHX',gameStatus:'UPCOMING',gameTime:'9:00 PM ET'},
     {id:'kd35',name:'Kevin Durant',shortName:'Durant',team:'PHX',pos:'SF',sport:'NBA',teamColor:'1D1160',lines:{pts:26.5,reb:6.5,ast:4.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-3',gameName:'DAL @ PHX',gameStatus:'UPCOMING',gameTime:'9:00 PM ET'},
   ];
   return samples;
@@ -1490,6 +1552,7 @@ function renderSlip() {
   const container = document.getElementById('slipPicks');
   const empty = document.getElementById('slipEmpty');
   document.getElementById('slipCount').textContent = slip.length;
+  updateFabCount();
 
   if (!slip.length) {
     container.innerHTML = '';
@@ -1690,7 +1753,24 @@ async function confirmEntry() {
   }
 }
 
-function closeConfirm() {
+function toggleMobileSlip() {
+  const panel = document.getElementById('slipPanel');
+  const fab = document.getElementById('slipFab');
+  if (!panel) return;
+  panel.classList.toggle('open');
+  fab.innerHTML = panel.classList.contains('open')
+    ? '✕ CLOSE'
+    : `⚡ MY SLIP <span class="slip-fab-count" id="fabCount">${slip.length}</span>`;
+}
+
+function updateFabCount() {
+  const el = document.getElementById('fabCount');
+  if (el) el.textContent = slip.length;
+  const fab = document.getElementById('slipFab');
+  if (fab && !fab.innerHTML.includes('CLOSE')) {
+    fab.innerHTML = `⚡ MY SLIP <span class="slip-fab-count" id="fabCount">${slip.length}</span>`;
+  }
+}
   document.getElementById('confirmModal').classList.remove('open');
 }
 
