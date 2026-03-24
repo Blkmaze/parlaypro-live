@@ -1050,7 +1050,18 @@ const PLAYER_DB = {
   'PHI':[{name:'Joel Embiid',pos:'C',lines:{pts:34.5,reb:11.5,ast:5.5},color:'006BB6'},{name:'Tyrese Maxey',pos:'PG',lines:{pts:25.5,reb:3.5,ast:6.5},color:'006BB6'}],
   'BKN':[{name:'Cam Thomas',pos:'SG',lines:{pts:22.5,reb:4.5,ast:3.5},color:'000000'},{name:'Ben Simmons',pos:'PG',lines:{pts:8.5,reb:6.5,ast:5.5},color:'000000'}],
   'WAS':[{name:'Kyle Kuzma',pos:'PF',lines:{pts:22.5,reb:7.5,ast:3.5},color:'002B5C'},{name:'Jordan Poole',pos:'PG',lines:{pts:17.5,reb:3.5,ast:5.5},color:'002B5C'}],
-  // NHL 2025-26
+  // NHL additional teams
+  'OTT': [{name:'Brady Tkachuk',pos:'LW',lines:{pts:0.5,reb:0.5,ast:1.5},color:'E4173E'},{name:'Tim Stutzle',pos:'C',lines:{pts:0.5,reb:0.5,ast:1.5},color:'E4173E'}],
+  'DET': [{name:'Dylan Larkin',pos:'C',lines:{pts:0.5,reb:0.5,ast:1.5},color:'CE1126'},{name:'Lucas Raymond',pos:'RW',lines:{pts:0.5,reb:0.5,ast:1.5},color:'CE1126'}],
+  'SEA': [{name:'Matty Beniers',pos:'C',lines:{pts:0.5,reb:0.5,ast:1.5},color:'001F5B'},{name:'Oliver Bjorkstrand',pos:'RW',lines:{pts:0.5,reb:0.5,ast:1.5},color:'001F5B'}],
+  'BUF': [{name:'Tage Thompson',pos:'C',lines:{pts:0.5,reb:0.5,ast:1.5},color:'003E7E'},{name:'Jason Zucker',pos:'LW',lines:{pts:0.5,reb:0.5,ast:1.5},color:'003E7E'}],
+  'PHI': [{name:'Sean Couturier',pos:'C',lines:{pts:0.5,reb:0.5,ast:1.5},color:'F74902'},{name:'Travis Konecny',pos:'RW',lines:{pts:0.5,reb:0.5,ast:1.5},color:'F74902'}],
+  'PIT': [{name:'Sidney Crosby',pos:'C',lines:{pts:0.5,reb:0.5,ast:1.5},color:'CFC52F'},{name:'Evgeni Malkin',pos:'C',lines:{pts:0.5,reb:0.5,ast:1.5},color:'CFC52F'}],
+  'NJD': [{name:'Nico Hischier',pos:'C',lines:{pts:0.5,reb:0.5,ast:1.5},color:'CE1126'},{name:'Jack Hughes',pos:'C',lines:{pts:0.5,reb:0.5,ast:1.5},color:'CE1126'}],
+  'STL': [{name:'Jordan Kyrou',pos:'RW',lines:{pts:0.5,reb:0.5,ast:1.5},color:'002F87'},{name:'Robert Thomas',pos:'C',lines:{pts:0.5,reb:0.5,ast:1.5},color:'002F87'}],
+  // MLB teams
+  'MIL': [{name:'Christian Yelich',pos:'LF',lines:{pts:0.5,reb:0.5,ast:0.5},color:'12284B'},{name:'Jackson Chourio',pos:'CF',lines:{pts:0.5,reb:0.5,ast:0.5},color:'12284B'}],
+  'CHC': [{name:'Cody Bellinger',pos:'CF',lines:{pts:0.5,reb:0.5,ast:0.5},color:'0E3386'},{name:'Dansby Swanson',pos:'SS',lines:{pts:0.5,reb:0.5,ast:0.5},color:'0E3386'}],
   'EDM':[{name:'Connor McDavid',pos:'C',lines:{pts:1.5,reb:1.5,ast:4.5},color:'041E42'},{name:'Leon Draisaitl',pos:'C',lines:{pts:1.5,reb:1.5,ast:4.5},color:'041E42'}],
   'COL':[{name:'Nathan MacKinnon',pos:'C',lines:{pts:1.5,reb:1.5,ast:4.5},color:'6F263D'},{name:'Mikko Rantanen',pos:'RW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'6F263D'}],
   'VGK':[{name:'Mark Stone',pos:'RW',lines:{pts:1.5,reb:1.5,ast:3.5},color:'B4975A'},{name:'Jack Eichel',pos:'C',lines:{pts:1.5,reb:1.5,ast:3.5},color:'B4975A'}],
@@ -1332,14 +1343,33 @@ function getTonightsScheduledProps() {
   const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
 
   const tonightGames = [
+    // NBA Tonight (3/24)
     { id:'t1', away:'SAC', home:'CHA', time:`Today ${fmt(today)} 7:00 PM ET`, sport:'NBA' },
     { id:'t2', away:'NO',  home:'NY',  time:`Today ${fmt(today)} 7:30 PM ET`, sport:'NBA' },
     { id:'t3', away:'ORL', home:'CLE', time:`Today ${fmt(today)} 8:00 PM ET`, sport:'NBA' },
     { id:'t4', away:'DEN', home:'PHX', time:`Today ${fmt(today)} 11:00 PM ET`, sport:'NBA' },
+    // NBA Tomorrow (3/25)
     { id:'t5', away:'ATL', home:'DET', time:`${fmt(tomorrow)} 7:00 PM ET`, sport:'NBA' },
     { id:'t6', away:'LAL', home:'IND', time:`${fmt(tomorrow)} 7:00 PM ET`, sport:'NBA' },
     { id:'t7', away:'CHI', home:'PHI', time:`${fmt(tomorrow)} 7:00 PM ET`, sport:'NBA' },
     { id:'t8', away:'OKC', home:'BOS', time:`${fmt(tomorrow)} 7:30 PM ET`, sport:'NBA' },
+    // NHL Tonight (3/24)
+    { id:'h1', away:'OTT', home:'DET', time:`Today ${fmt(today)} 7:00 PM ET`, sport:'NHL' },
+    { id:'h2', away:'SEA', home:'BUF', time:`Today ${fmt(today)} 7:00 PM ET`, sport:'NHL' },
+    { id:'h3', away:'PHI', home:'PIT', time:`Today ${fmt(today)} 7:00 PM ET`, sport:'NHL' },
+    { id:'h4', away:'NJD', home:'NYR', time:`Today ${fmt(today)} 7:00 PM ET`, sport:'NHL' },
+    { id:'h5', away:'CAR', home:'FLA', time:`Today ${fmt(today)} 7:30 PM ET`, sport:'NHL' },
+    { id:'h6', away:'COL', home:'STL', time:`Today ${fmt(today)} 8:00 PM ET`, sport:'NHL' },
+    { id:'h7', away:'EDM', home:'VGK', time:`Today ${fmt(today)} 10:00 PM ET`, sport:'NHL' },
+    // MLB Opening Week
+    { id:'m1', away:'NYY', home:'MIL', time:`Today ${fmt(today)} 4:10 PM ET`, sport:'MLB' },
+    { id:'m2', away:'LAD', home:'CHC', time:`Today ${fmt(today)} 7:40 PM ET`, sport:'MLB' },
+    { id:'m3', away:'HOU', home:'TEX', time:`Today ${fmt(today)} 8:05 PM ET`, sport:'MLB' },
+    // NCAA Women Sweet 16 (3/27-3/28)
+    { id:'w1', away:'UCONN', home:'LOU', time:'Fri 3/27 7:00 PM ET', sport:'MM_WOMEN' },
+    { id:'w2', away:'SC',  home:'UCLA', time:'Fri 3/27 9:00 PM ET', sport:'MM_WOMEN' },
+    { id:'w3', away:'TEX', home:'LSU',  time:'Sat 3/28 7:00 PM ET', sport:'MM_WOMEN' },
+    { id:'w4', away:'IOWA',home:'ND',   time:'Sat 3/28 9:00 PM ET', sport:'MM_WOMEN' },
   ];
   const props = [];
   for (const g of tonightGames) {
