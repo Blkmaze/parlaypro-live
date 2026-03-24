@@ -855,7 +855,8 @@ body::before {
       <!-- Populated by JS -->
       <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text3);">
         <div style="font-size:48px;margin-bottom:16px;">⚡</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;">Agent loading player props...</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;">Loading player props...</div>
+        <div style="font-size:13px;margin-top:8px;opacity:0.6;">Fetching tonight's games from ESPN</div>
       </div>
     </div>
   </div>
@@ -1331,32 +1332,66 @@ async function generatePropsForUpcoming(game, sport) {
   ];
 }
 
-function generateSampleProps() {
-  const samples = [
-    {id:'lbj',name:'LeBron James',shortName:'James',team:'LAL',pos:'SF',sport:'NBA',teamColor:'552583',lines:{pts:24.5,reb:7.5,ast:7.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-1',gameName:'LAL @ GSW',gameStatus:'UPCOMING',gameTime:'7:30 PM ET'},
-    {id:'sc30',name:'Steph Curry',shortName:'Curry',team:'GSW',pos:'PG',sport:'NBA',teamColor:'1D428A',lines:{pts:26.5,reb:4.5,ast:5.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-1',gameName:'LAL @ GSW',gameStatus:'UPCOMING',gameTime:'7:30 PM ET'},
-    {id:'sga',name:'Shai G-Alexander',shortName:'SGA',team:'OKC',pos:'PG',sport:'NBA',teamColor:'007AC1',lines:{pts:30.5,reb:5.5,ast:6.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-2',gameName:'OKC @ DEN',gameStatus:'UPCOMING',gameTime:'8:00 PM ET'},
-    {id:'jok',name:'Nikola Jokic',shortName:'Jokic',team:'DEN',pos:'C',sport:'NBA',teamColor:'0E2240',lines:{pts:26.5,reb:12.5,ast:9.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-2',gameName:'OKC @ DEN',gameStatus:'UPCOMING',gameTime:'8:00 PM ET'},
-    {id:'kyrie',name:'Kyrie Irving',shortName:'Kyrie',team:'DAL',pos:'PG',sport:'NBA',teamColor:'00538C',lines:{pts:23.5,reb:4.5,ast:5.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-3',gameName:'DAL @ PHX',gameStatus:'UPCOMING',gameTime:'9:00 PM ET'},
-    {id:'kd35',name:'Kevin Durant',shortName:'Durant',team:'PHX',pos:'SF',sport:'NBA',teamColor:'1D1160',lines:{pts:26.5,reb:6.5,ast:4.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'sample-3',gameName:'DAL @ PHX',gameStatus:'UPCOMING',gameTime:'9:00 PM ET'},
+function getTonightsScheduledProps() {
+  // Always show props from known tonight's NBA games using season averages
+  const today = new Date();
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+  const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+
+  const tonightGames = [
+    { id:'t1', away:'SAC', home:'CHA', time:`Today ${fmt(today)} 7:00 PM ET`, sport:'NBA' },
+    { id:'t2', away:'NO',  home:'NY',  time:`Today ${fmt(today)} 7:30 PM ET`, sport:'NBA' },
+    { id:'t3', away:'ORL', home:'CLE', time:`Today ${fmt(today)} 8:00 PM ET`, sport:'NBA' },
+    { id:'t4', away:'DEN', home:'PHX', time:`Today ${fmt(today)} 11:00 PM ET`, sport:'NBA' },
+    { id:'t5', away:'ATL', home:'DET', time:`${fmt(tomorrow)} 7:00 PM ET`, sport:'NBA' },
+    { id:'t6', away:'LAL', home:'IND', time:`${fmt(tomorrow)} 7:00 PM ET`, sport:'NBA' },
+    { id:'t7', away:'CHI', home:'PHI', time:`${fmt(tomorrow)} 7:00 PM ET`, sport:'NBA' },
+    { id:'t8', away:'OKC', home:'BOS', time:`${fmt(tomorrow)} 7:30 PM ET`, sport:'NBA' },
   ];
-  return samples;
+  const props = [];
+  for (const g of tonightGames) {
+    const awayPlayers = getPlayersFromDB(g.away, g.sport, g.id, g.away+' @ '+g.home, false, 'UPCOMING', g.time);
+    const homePlayers = getPlayersFromDB(g.home, g.sport, g.id, g.away+' @ '+g.home, false, 'UPCOMING', g.time);
+    props.push(...awayPlayers.slice(0,2), ...homePlayers.slice(0,2));
+  }
+  return props.length ? props : getLegacySampleProps();
 }
+  for (const g of tonightGames) {
+    const awayPlayers = getPlayersFromDB(g.away, g.sport, g.id, g.away+' @ '+g.home, false, 'UPCOMING', g.time);
+    const homePlayers = getPlayersFromDB(g.home, g.sport, g.id, g.away+' @ '+g.home, false, 'UPCOMING', g.time);
+    props.push(...awayPlayers.slice(0,2), ...homePlayers.slice(0,2));
+  }
+  return props.length ? props : getLegacySampleProps();
+}
+
+function getLegacySampleProps() {
+  return [
+    {id:'sga',name:'Shai Gilgeous-Alexander',shortName:'SGA',team:'OKC',pos:'PG',sport:'NBA',teamColor:'007AC1',lines:{pts:30.5,reb:5.5,ast:6.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'s1',gameName:'OKC @ DEN',gameStatus:'UPCOMING',gameTime:'8:00 PM ET'},
+    {id:'jok',name:'Nikola Jokic',shortName:'Jokic',team:'DEN',pos:'C',sport:'NBA',teamColor:'0E2240',lines:{pts:26.5,reb:12.5,ast:9.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'s1',gameName:'OKC @ DEN',gameStatus:'UPCOMING',gameTime:'8:00 PM ET'},
+    {id:'lbj',name:'LeBron James',shortName:'LeBron',team:'LAL',pos:'SF',sport:'NBA',teamColor:'552583',lines:{pts:24.5,reb:7.5,ast:7.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'s2',gameName:'LAL @ BOS',gameStatus:'UPCOMING',gameTime:'7:30 PM ET'},
+    {id:'tatum',name:'Jayson Tatum',shortName:'Tatum',team:'BOS',pos:'SF',sport:'NBA',teamColor:'007A33',lines:{pts:27.5,reb:8.5,ast:4.5},currentStats:{pts:0,reb:0,ast:0},activeStat:'pts',isLive:false,gameId:'s2',gameName:'LAL @ BOS',gameStatus:'UPCOMING',gameTime:'7:30 PM ET'},
+  ];
+}
+
+function generateSampleProps() { return getLegacySampleProps(); }
 
 // ── MAIN AGENT SCAN ───────────────────────────────────────────
 async function loadAllProps() {
-  logStatus('Agent scanning for live player props...');
-  const sports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'MLS', 'WNBA'];
-  allProps = [];
+  // Show DB props IMMEDIATELY — don't wait for ESPN
+  allProps = getTonightsScheduledProps();
+  renderCards();
+  logStatus('Loaded ' + allProps.length + ' player props — checking for live games...');
 
-  // Scan next 7 days so players can buy early
+  const sports = ['MM_WOMEN', 'MM_MEN', 'NBA', 'NHL', 'MLB', 'MLS', 'WNBA'];
+
+  // Scan next 2 days
   const now = new Date();
-  const dates = Array.from({length:7}, (_,i) => {
+  const dates = Array.from({length:2}, (_,i) => {
     const d = new Date(now); d.setDate(d.getDate()+i);
     return d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
   });
 
-  // Fetch all sports x all dates in parallel
+  // Fetch ESPN in background
   const gameResults = await Promise.allSettled(
     sports.flatMap(s => dates.map(date => fetchGamesForSport(s, date)))
   );
@@ -1365,28 +1400,31 @@ async function loadAllProps() {
   const liveGames = [];
   gameResults.forEach(r => {
     if (r.status==='fulfilled' && r.value) {
-      r.value.filter(g => g.status==='LIVE'||g.status==='UPCOMING').forEach(g => {
+      r.value.filter(g => g.status==='LIVE'||g.status==='UPCOMING'||g.status==='STATUS_IN_PROGRESS'||g.status==='STATUS_SCHEDULED').forEach(g => {
         if (!seen.has(g.id)) { seen.add(g.id); liveGames.push(g); }
       });
     }
   });
 
   if (!liveGames.length) {
-    logStatus('No games found — showing sample props');
-    allProps = generateSampleProps();
-    renderCards();
+    logStatus('Loaded ' + allProps.length + ' player props — ' + new Date().toLocaleTimeString());
     return;
   }
 
-  // Fetch player stats/rosters for each game in parallel
+  // Fetch player stats for live/upcoming games
   const propResults = await Promise.allSettled(
     liveGames.slice(0, 8).map(async game => {
       let players = [];
+      // Always try to get props — live OR upcoming
       if (game.status === 'LIVE') {
         players = await fetchPlayerStats(game.id, game.sport);
       }
       if (!players.length) {
         players = await generatePropsForUpcoming(game, game.sport);
+      }
+      // If still nothing, use hardcoded season averages for known teams
+      if (!players.length) {
+        players = getSeasonAveragePlayers(game, game.sport);
       }
       players.forEach(p => {
         p.gameId = game.id;
@@ -1771,6 +1809,8 @@ function updateFabCount() {
     fab.innerHTML = `⚡ MY SLIP <span class="slip-fab-count" id="fabCount">${slip.length}</span>`;
   }
 }
+
+function closeConfirm() {
   document.getElementById('confirmModal').classList.remove('open');
 }
 
