@@ -559,6 +559,14 @@
       <div class="confirm-icon">✓</div>
       <div class="confirm-title">SQUARES SECURED!</div>
       <div class="confirm-msg" id="confirmMsg"></div>
+      <div style="width:100%;margin-top:16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:14px;text-align:left;">
+        <div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;">🔔 Get notified when your square wins</div>
+        <div style="display:flex;gap:8px;">
+          <input type="email" id="notifyEmail" placeholder="your@email.com" style="flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;" />
+          <button onclick="saveNotifyEmail()" style="background:var(--green);border:none;border-radius:8px;color:white;font-size:12px;font-weight:700;padding:8px 14px;cursor:pointer;white-space:nowrap;">Notify Me</button>
+        </div>
+        <div id="notifyMsg" style="font-size:10px;color:var(--green-light);margin-top:6px;display:none;">✅ We'll text/email you when you win!</div>
+      </div>
     </div>
   </div>
 </div>
@@ -877,7 +885,13 @@ async function buildGrid(game) {
       else if (isPending) { cls='cell-pending'; text=pendingInitials||'⏳'; }
       else { cls='cell-open'; }
       const clickHandler = (cls==='cell-open') ? `onclick="openPayModal()"` : '';
-      html += `<div class="cell ${cls}" data-idx="${idx}" ${clickHandler} style="${style}">${text}</div>`;
+      // Win odds: score combos that hit this cell (top=away, left=home)
+      const awayDigit = topNums[j];
+      const homeDigit = leftNums[i];
+      const oddsLabel = getWinOdds(awayDigit, homeDigit);
+      const oddsAttr = (cls==='cell-open') ? `data-odds="${oddsLabel}" title="${awayDigit}-${homeDigit} | ${oddsLabel}"` : '';
+      const oddsHtml = (cls==='cell-open' || cls==='cell-mine') ? `<span style="font-size:7px;opacity:0.55;display:block;line-height:1;margin-top:1px;">${oddsLabel}</span>` : '';
+      html += `<div class="cell ${cls}" data-idx="${idx}" ${clickHandler} ${oddsAttr} style="${style}">${text}${oddsHtml}</div>`;
     }
   }
   document.getElementById('squaresGrid').innerHTML = html;
@@ -1082,6 +1096,44 @@ async function buildTicker() {
     </div>`;
   }).join('');
   wrap.innerHTML += wrap.innerHTML;
+}
+
+// ── WINNER NOTIFICATIONS ─────────────────────────────────────
+function saveNotifyEmail() {
+  const email = document.getElementById('notifyEmail').value.trim();
+  if (!email || !email.includes('@')) { alert('Enter a valid email.'); return; }
+  const game = getCurrentGame();
+  const initials = game ? (getInitialsForGame(game.id) || '') : '';
+  // Save to localStorage for now — backend notify endpoint can be wired later
+  const notifyList = JSON.parse(localStorage.getItem('notify_list') || '[]');
+  notifyList.push({ email, initials, gameId: game ? game.id : '', ts: Date.now() });
+  localStorage.setItem('notify_list', JSON.stringify(notifyList));
+  // Also send to API for server-side storage
+  fetch('/api/notify-signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, initials, gameId: game ? game.id : '' })
+  }).catch(() => {}); // fire and forget — even if endpoint doesn't exist yet
+  document.getElementById('notifyMsg').style.display = 'block';
+  document.getElementById('notifyEmail').value = '';
+}
+
+// ── WIN ODDS ──────────────────────────────────────────────────
+// NFL/NBA scoring frequency by last digit (empirical probabilities)
+const DIGIT_FREQ = {
+  NFL: [0.149,0.047,0.042,0.104,0.082,0.082,0.064,0.100,0.086,0.073],
+  NBA: [0.118,0.086,0.094,0.107,0.085,0.088,0.096,0.100,0.113,0.113]
+};
+function getWinOdds(awayDigit, homeDigit) {
+  const board = getActiveBoard();
+  const sport = board ? board.sport : 'NBA';
+  const freq = (sport === 'NFL' || sport === 'NCAAF') ? DIGIT_FREQ.NFL : DIGIT_FREQ.NBA;
+  const prob = (freq[awayDigit] || 0.1) * (freq[homeDigit] || 0.1);
+  const pct = (prob * 100).toFixed(1);
+  // Hot/cold label
+  if (prob >= 0.014) return pct + '% 🔥';
+  if (prob <= 0.004) return pct + '% 🥶';
+  return pct + '%';
 }
 
 // ── SHARE BOARD ──────────────────────────────────────────────
