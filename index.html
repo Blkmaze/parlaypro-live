@@ -4,7 +4,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ParlayPro Live — Super Squares</title>
+<title>Parlay Live — Sports Squares | Buy Squares for Every Game</title>
+<meta name="description" content="Play sports squares online for NFL, NBA, NHL, MLB and more. Buy squares, win real money every quarter. The easiest way to play squares with friends.">
+<meta name="keywords" content="sports squares online, football squares, buy squares, NFL squares, NBA squares, super bowl squares, online squares pool">
+<meta property="og:title" content="Parlay Live — Sports Squares">
+<meta property="og:description" content="Buy squares for any game. Win real money every quarter. NFL, NBA, NHL, MLB and more.">
+<meta property="og:url" content="https://parlaylive.live">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://parlaylive.live">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Parlay Live",
+  "url": "https://parlaylive.live",
+  "description": "Play sports squares online for NFL, NBA, NHL, MLB and more. Buy squares, win real money every quarter.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://parlaylive.live/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+<\/script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -193,6 +214,36 @@
   /* STATUS BAR */
   #statusBar { position:fixed; bottom:0; left:0; right:0; background:#111; border-top:1px solid #333; padding:6px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:#22c55e; z-index:9999; }
 
+  /* HOW IT WORKS */
+  .how-it-works { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px; }
+  .how-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:2px; margin-bottom:14px; color:var(--text); }
+  .how-steps { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .how-step { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; text-align:center; }
+  .how-step-num { font-family:'Bebas Neue',sans-serif; font-size:28px; color:var(--green-light); line-height:1; }
+  .how-step-title { font-size:12px; font-weight:700; margin:6px 0 4px; }
+  .how-step-desc { font-size:10px; color:var(--text3); line-height:1.4; }
+  @media(max-width:768px) { .how-steps { grid-template-columns:1fr; } }
+
+  /* SHARE BUTTON */
+  .share-btn { display:flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border2); border-radius:8px; padding:6px 12px; font-size:11px; font-weight:700; color:var(--text2); cursor:pointer; transition:all 0.15s; }
+  .share-btn:hover { border-color:var(--green); color:var(--green-light); }
+
+  /* WIN ODDS */
+  .cell-open[data-odds]:hover::after { content:attr(data-odds); position:absolute; bottom:100%; left:50%; transform:translateX(-50%); background:#000; color:var(--green-light); font-size:9px; padding:2px 5px; border-radius:3px; white-space:nowrap; pointer-events:none; }
+  .cell { position:relative; }
+
+  /* COMPARE TABLE */
+  .compare-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:12px; }
+  .compare-header { padding:12px 14px; border-bottom:1px solid var(--border); font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .compare-table { width:100%; border-collapse:collapse; font-size:11px; }
+  .compare-table th { padding:8px 10px; text-align:left; color:var(--text3); font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; border-bottom:1px solid var(--border); }
+  .compare-table td { padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.03); }
+  .compare-table tr:last-child td { border-bottom:none; }
+  .compare-winner { color:var(--green-light); font-weight:700; }
+  .compare-loser { color:var(--text3); }
+  .compare-check { color:var(--green-light); }
+  .compare-x { color:var(--red); }
+
   @media(max-width:768px) {
     .main-layout { grid-template-columns:1fr; }
     .page-wrap { padding:8px; }
@@ -214,16 +265,42 @@
 <!-- LAYOUT -->
 <div class="page-wrap">
 
+  <!-- HOW IT WORKS -->
+  <div class="how-it-works" id="howItWorks">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div class="how-title">🏆 How It Works</div>
+      <button onclick="document.getElementById('howItWorks').style.display='none'" style="background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:9px;padding:3px 8px;border-radius:4px;cursor:pointer;">Hide</button>
+    </div>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="how-step-num">1</div>
+        <div class="how-step-title">Pick a Game</div>
+        <div class="how-step-desc">Choose any live board — NFL, NBA, NHL, MLB. New games posted automatically.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-step-num">2</div>
+        <div class="how-step-title">Buy Squares</div>
+        <div class="how-step-desc">Pick your quantity, pay via CashApp, PayPal, or card. Squares assigned randomly.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-step-num">3</div>
+        <div class="how-step-title">Win Each Quarter</div>
+        <div class="how-step-desc">If the last digit of each team's score matches your square — you win the pot for that quarter!</div>
+      </div>
+    </div>
+  </div>
+
   <!-- AGENT HEADER -->
   <div class="agent-header">
     <div>
-      <div class="agent-title">🏆 ParlayPro Live — Super Squares</div>
+      <div class="agent-title">🏆 Parlay Live — Super Squares</div>
       <div class="agent-status" id="agentStatus">Agent scanning for live games...</div>
     </div>
     <div class="nav-tabs">
       <a href="/" class="nav-tab active">🏈 Squares</a>
       <a href="/pickem" class="nav-tab">⚡ Pick'em</a>
       <a href="/admin" class="nav-tab">🔐 Admin</a>
+      <a href="https://sundaysquares.com" class="nav-tab" style="color:var(--text3);font-size:10px;" target="_blank" title="Competitor charges $4.99/board">vs competitors ↗</a>
     </div>
     <div class="agent-badge">
       <span>🤖</span>
@@ -247,6 +324,7 @@
             <div class="board-meta" id="boardMeta">
               <span id="boardDate"></span>
               <span id="boardStatus"></span>
+              <button class="share-btn" id="shareBoardBtn" onclick="shareBoard()" style="margin-left:8px;">🔗 Share Board</button>
             </div>
           </div>
           <div class="board-game-score" id="boardScore"></div>
@@ -343,7 +421,57 @@
             <span id="ctaText">BUY 5 SQUARES NOW</span>
           </button>
           <div class="cta-sub">Squares assigned randomly after payment verified</div>
+          <div style="margin-top:10px;background:rgba(22,163,74,0.08);border:1px solid rgba(22,163,74,0.2);border-radius:8px;padding:8px 10px;font-size:10px;color:var(--text2);text-align:center;">
+            💰 <strong style="color:var(--green-light);">No platform fees.</strong> 100% of your square cost goes into the prize pot. Competitors charge $4–$13/board on top.
+          </div>
         </div>
+      </div>
+
+      <!-- COMPARE TABLE -->
+      <div class="compare-card">
+        <div class="compare-header">📊 How We Compare</div>
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Parlay Live</th>
+              <th>SundaySquares</th>
+              <th>RunYourPool</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Platform fee</td>
+              <td class="compare-winner">$0</td>
+              <td class="compare-loser">$4.99/board</td>
+              <td class="compare-loser">$12.95/board</td>
+            </tr>
+            <tr>
+              <td>Live scores</td>
+              <td class="compare-check">✓ Real-time</td>
+              <td class="compare-check">✓</td>
+              <td class="compare-x">✗</td>
+            </tr>
+            <tr>
+              <td>All sports</td>
+              <td class="compare-check">✓ NFL/NBA/NHL/MLB+</td>
+              <td class="compare-loser">Football only</td>
+              <td class="compare-loser">NFL only</td>
+            </tr>
+            <tr>
+              <td>Player props</td>
+              <td class="compare-check">✓</td>
+              <td class="compare-x">✗</td>
+              <td class="compare-x">✗</td>
+            </tr>
+            <tr>
+              <td>Mobile friendly</td>
+              <td class="compare-check">✓</td>
+              <td class="compare-check">✓</td>
+              <td class="compare-x">✗</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- ALL BOARDS -->
@@ -956,6 +1084,25 @@ async function buildTicker() {
   wrap.innerHTML += wrap.innerHTML;
 }
 
+// ── SHARE BOARD ──────────────────────────────────────────────
+function shareBoard() {
+  const game = getCurrentGame();
+  if (!game) return;
+  const url = window.location.origin + '/?game=' + game.id;
+  const text = '🏆 Play squares for ' + game.away + ' @ ' + game.home + '!\nBuy your squares → ' + url;
+  if (navigator.share) {
+    navigator.share({ title: 'Parlay Live Squares', text: text, url: url }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(url).then(() => {
+      const btn = document.getElementById('shareBoardBtn');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✅ Link Copied!';
+      btn.style.color = 'var(--green-light)';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
+    }).catch(() => prompt('Copy this link:', url));
+  }
+}
+
 // ── PAYMENT UI ────────────────────────────────────────────────
 function setQty(n, btn) {
   currentQty = n;
@@ -1064,8 +1211,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.body.appendChild(m); setTimeout(()=>m.remove(),5000);
   }
 
+  // Handle shared board link (?game=gameId)
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _sharedGameId = _urlParams.get('game');
+
   try {
     await agentScan();
+    // If a shared game link, jump to that board
+    if (_sharedGameId) {
+      const idx = boards.findIndex(b => b.game.id === _sharedGameId);
+      if (idx !== -1) { activeBoardIdx = idx; await loadBoard(idx); }
+    }
     buildTicker().catch(()=>{});
 
     // Smart polling — only update scores every 30 seconds, only rescan when games go FINAL

@@ -3,11 +3,17 @@ const SITE_ID    = "d6f0d30b-ccaa-461e-9973-f13ee862343b";
 const STORE      = "prlive";
 const ADMIN_PIN  = process.env.ADMIN_PIN  || "2826";
 const MASTER_PIN = process.env.MASTER_PIN || "0614";
-const ORIGIN     = "https://parlaypro-live.netlify.app";
+const ORIGIN     = "https://parlaylive.live";
+const ALLOWED_ORIGINS = [
+  "https://parlaylive.live",
+  "https://www.parlaylive.live",
+  "https://parlaypro-live.netlify.app",
+  "http://localhost:8888"
+];
 
 function corsHeaders(req) {
   var origin = req.headers.get("origin") || "";
-  var allowed = origin === ORIGIN || origin === "http://localhost:8888";
+  var allowed = ALLOWED_ORIGINS.indexOf(origin) !== -1;
   return {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": allowed ? origin : ORIGIN,
